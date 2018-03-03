@@ -28,7 +28,7 @@ func main() {
 
 	goast := loader.Config{}
 	gofile, err := goast.ParseFile(filePathSrc, nil)
-	tdot.PkgName = gofile.Name.Name
+	tdot.PName = gofile.Name.Name
 	if err != nil {
 		panic(err)
 	}
@@ -57,36 +57,39 @@ func genDump() {
 
 	tdot.Types = make([]tmplDotType, len(ts))
 	for t, s := range ts {
-		tdot.Types[i].TypeName = t.Name.Name
+		tdot.Types[i].TName = t.Name.Name
 		tdot.Types[i].Fields = make([]tmplDotField, len(s.Fields.List))
 		for f, fld := range s.Fields.List {
 			tf := &tdot.Types[i].Fields[f]
 			if l := len(fld.Names); l == 0 {
 				if ident, _ := fld.Type.(*ast.Ident); ident != nil {
-					tf.FieldName = ident.Name
+					tf.FName = ident.Name
 				} else {
 					panic(fmt.Sprintf("%T", fld.Type))
 				}
 			} else if l == 1 {
-				tf.FieldName = fld.Names[0].Name
+				tf.FName = fld.Names[0].Name
 			} else {
 				panic(l)
 			}
+			mf, lf := "me."+tf.FName, "l_"+tf.FName
 			if ident, _ := fld.Type.(*ast.Ident); ident != nil {
 				switch ident.Name {
 				case "bool":
-					tf.TmplW = "if me." + tf.FieldName + " { buf.WriteByte(1) } else { buf.WriteByte(0) }"
-					tf.TmplR = "me." + tf.FieldName + " = (data[i] == 1) ; i++"
+					tf.TmplW = "if " + mf + " { buf.WriteByte(1) } else { buf.WriteByte(0) }"
+					tf.TmplR = mf + " = (data[i] == 1) ; i++"
 				case "uint8", "byte":
-					tf.TmplW = "buf.WriteByte(me." + tf.FieldName + ")"
-					tf.TmplR = "me." + tf.FieldName + " = data[i] ; i++"
+					tf.TmplW = "buf.WriteByte(" + mf + ")"
+					tf.TmplR = mf + " = data[i] ; i++"
+				case "string":
+					tf.TmplW = lf + " := uint64(len(" + mf + ")) ; " + writeLen(tf.FName) + " ; buf.WriteString(" + mf + ")"
 				default:
 					tf.TmplW = "//ident:" + ident.Name
 					for tspec := range ts {
 						if tspec.Name.Name == ident.Name {
 							tdot.Types[i].HasWData = true
-							tf.TmplW = "me." + tf.FieldName + ".writeTo(&data) ; l_" + tf.FieldName + " := uint64(data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_" + tf.FieldName + "))[0:8]) ; data.WriteTo(buf)"
-							tf.TmplR = "l_" + tf.FieldName + " := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; me." + tf.FieldName + ".UnmarshalBinary(data[i : i+l_" + tf.FieldName + "]) ; i += l_" + tf.FieldName
+							tf.TmplW = mf + ".writeTo(&data) ; " + lf + " := uint64(data.Len()) ; " + writeLen(tf.FName) + " ; data.WriteTo(buf)"
+							tf.TmplR = lf + " := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; " + mf + ".UnmarshalBinary(data[i : i+" + lf + "]) ; i += " + lf
 							break
 						}
 					}
@@ -109,4 +112,8 @@ func genDump() {
 	} else if err = tmpl.Execute(file, &tdot); err != nil {
 		panic(err)
 	}
+}
+
+func writeLen(fieldName string) string {
+	return "buf.Write((*[8]byte)(unsafe.Pointer(&l_" + fieldName + "))[:])"
 }

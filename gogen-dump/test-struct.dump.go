@@ -12,7 +12,7 @@ import (
 func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	var data bytes.Buffer
 	
-	me.embName.writeTo(&data) ; l_embName := uint64(data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[0:8]) ; data.WriteTo(buf)
+	me.embName.writeTo(&data) ; l_embName := uint64(data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:]) ; data.WriteTo(buf)
 	
 	if me.Deleted { buf.WriteByte(1) } else { buf.WriteByte(0) }
 	
@@ -67,11 +67,11 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
 	
 	
-	//ident:string
+	l_FirstName := uint64(len(me.FirstName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:]) ; buf.WriteString(me.FirstName)
 	
 	//no-ident:*ast.ArrayType
 	
-	//ident:string
+	l_LastName := uint64(len(me.LastName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString(me.LastName)
 	
 	return
 }
