@@ -2,33 +2,13 @@ package main
 
 import (
 	"strings"
-	"unsafe"
 )
-
-func foo() {
-	var data []byte
-
-	l := uint64(len(data))
-	b := (*[8]byte)(unsafe.Pointer(&l))[:]
-	println(b)
-
-	var pi64 float64 = 3.14
-	var b64 = (*[8]byte)(unsafe.Pointer(&pi64))[:]
-	var pi32 float32 = 3.14
-	var b32 = (*[4]byte)(unsafe.Pointer(&pi32))[:]
-	println(b64)
-	println(b32)
-	p32 := *((*float32)(unsafe.Pointer(&b32[0])))
-	p64 := (*float64)(unsafe.Pointer(&b64[0]))
-	println(p32)
-	println(*p64)
-}
 
 type tmplDotFile struct {
 	ProgHint string
 	PName    string
 	Types    []tmplDotType
-	Imps     map[string]bool
+	Imps     map[string]string
 }
 
 type tmplDotType struct {
@@ -65,8 +45,8 @@ import (
 	"bytes"
 	"io"
 	"unsafe"
-	{{range $key, $val := .Imps}}
-	"{{ $key -}}"
+	{{range $pkgname, $pkgimppath := .Imps}}
+	{{ $pkgname }} "{{$pkgimppath}}"
 	{{- end}}
 )
 

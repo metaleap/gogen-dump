@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump", Imps: map[string]bool{}}
+	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump", Imps: map[string]string{}}
 	filePathSrc = udevgo.GopathSrc(tdot.ProgHint, "test-struct.go")
 	typeNames   = []string{"testStruct", "embName"}
 	ts          = map[*ast.TypeSpec]*ast.StructType{}
@@ -119,7 +119,15 @@ func typeIdent(t ast.Expr) string {
 		return "map[" + typeIdent(ht.Key) + "]" + typeIdent(ht.Value)
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		pkgname := sel.X.(*ast.Ident).Name
-		tdot.Imps[pkgname] = true
+		tdot.Imps[pkgname] = pkgname
+		if udevgo.PkgsByImP == nil {
+			if err := udevgo.RefreshPkgs(); err != nil {
+				panic(err)
+			}
+		}
+		if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
+			tdot.Imps[pkgname] = pkgimppath
+		}
 		return pkgname + "." + sel.Sel.Name
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
 		return "interface{}"
