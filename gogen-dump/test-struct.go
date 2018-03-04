@@ -1,11 +1,18 @@
 package main
 
+import (
+	"encoding"
+)
+
 type testStruct struct {
 	embName
 	Deleted    bool
-	Balance    complex128
-	AccountAge float64
-	Age        byte
+	Balance    uintptr
+	AccountAge int
+	Any        interface{} `gendump:"bool byte string int float64 float32"`
+	Err        error
+	Marsh      encoding.BinaryMarshaler
+	Age        uint
 	R          rune
 }
 

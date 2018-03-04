@@ -17,9 +17,9 @@ func foo() {
 	var b32 = (*[4]byte)(unsafe.Pointer(&pi32))[:]
 	println(b64)
 	println(b32)
-	p32 := (*float32)(unsafe.Pointer(&b32[0]))
+	p32 := *((*float32)(unsafe.Pointer(&b32[0])))
 	p64 := (*float64)(unsafe.Pointer(&b64[0]))
-	println(*p32)
+	println(p32)
 	println(*p64)
 }
 
@@ -83,7 +83,6 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	{{range .Fields}}
 	{{.TmplR}}
 	{{end}}
-	if i > 0 {}
 	return
 }
 {{end}}
