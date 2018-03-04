@@ -82,21 +82,8 @@ func genDump() {
 					taggedunion = ustr.Split(tagval, " ")
 				}
 			}
-			nf, mf := tf.FName, "me."+tf.FName
-			if len(taggedunion) > 0 {
-				tf.TmplR = "t_" + nf + " := data[pos] ; pos++ ; switch t_" + nf + " {"
-				tf.TmplW = "switch t_" + nf + " := " + mf + ".(type) {"
-				for ti, tu := range taggedunion {
-					tr, tw := genPrimRW(tf.FName, "t_"+nf, &tdot.Types[i], tu, 0, 0)
-					tf.TmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + tr
-					tf.TmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
-				}
-				tf.TmplR += "\n\t\tdefault:\n\t\t\t" + mf + " = nil"
-				tf.TmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
-				tf.TmplR += "\n\t}"
-				tf.TmplW += "\n\t}"
-			} else if ident := typeIdent(fld.Type); ident != "" {
-				tf.TmplR, tf.TmplW = genPrimRW(tf.FName, "", &tdot.Types[i], ident, 0, 0)
+			if ident := typeIdent(fld.Type); ident != "" {
+				tf.TmplR, tf.TmplW = genPrimRW(tf.FName, "", &tdot.Types[i], ident, 0, 0, taggedunion)
 			} else {
 				tf.TmplW = "//no-ident:" + fmt.Sprintf("%T", fld.Type)
 			}
@@ -130,16 +117,18 @@ func typeIdent(t ast.Expr) string {
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		return sel.X.(*ast.Ident).Name + "." + sel.Sel.Name
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
-		return "?"
+		return "interface{}"
 	}
 	panic(fmt.Sprintf("%T", t))
 }
 
-func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int) (tmplR string, tmplW string) {
+func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
 	nf, mfw, mfr, lf := fieldName, "me."+fieldName, "me."+fieldName, "l_"+fieldName
 	if altNoMe != "" {
 		if mfw = altNoMe; iterDepth > 0 {
-			mfr = ustr.TrimR(altNoMe, ":") + "[" + fieldName + "]"
+			if mfr = ustr.TrimR(altNoMe, ":"); !ustr.Suff(mfr, "["+fieldName+"]") {
+				mfr += "[" + fieldName + "]"
+			}
 		}
 	}
 	if numIndir > 0 {
@@ -186,7 +175,7 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 					break
 				}
 			}
-			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth)
+			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth, taggedUnion)
 			for i := 0; i < numindir; i++ {
 				tmplR += "if data[pos] == 0 { pos++ } else { pos++ ; "
 				tmplW += "if " + ustr.Times("*", i) + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; "
@@ -212,16 +201,31 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			slen := typeName[1:pclose]
 			if slen == "" {
 				slen = "int(" + lf + ")"
-				tmplR = genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
-				tmplW = lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
+				tmplR += genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
+				tmplW += lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
+			} else if numIndir > 0 {
+				tmplR += mfr + "= " + typeName + "{} ; "
 			}
 			idx := ustr.Times("i", iterDepth+1) + "_" + nf
 			tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 			tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-			tr, _ := genPrimRW(idx, mfr, t, typeName[pclose+1:], 0, iterDepth+1)
+			tr, _ := genPrimRW(idx, mfr, t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
 			tmplR += "\n\t\t" + tr
-			_, tw := genPrimRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1)
+			_, tw := genPrimRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
 			tmplW += "\n\t\t" + tw
+			tmplR += "\n\t}"
+			tmplW += "\n\t}"
+		} else if len(taggedUnion) > 0 {
+			tmplR += "t_" + nf + " := data[pos] ; pos++ ; switch t_" + nf + " {"
+			tmplW += "switch t_" + nf + " := " + mfw + ".(type) {"
+			for ti, tu := range taggedUnion {
+				tr, _ := genPrimRW(nf, mfr, t, tu, 0, iterDepth, nil)
+				tmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + tr
+				_, tw := genPrimRW(nf, "t_"+nf, t, tu, 0, iterDepth, nil)
+				tmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
+			}
+			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + " = nil"
+			tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
 			tmplR += "\n\t}"
 			tmplW += "\n\t}"
 		} else {
