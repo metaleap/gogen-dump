@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"unsafe"
 )
 
@@ -27,6 +28,7 @@ type tmplDotFile struct {
 	ProgHint string
 	PName    string
 	Types    []tmplDotType
+	Imps     map[string]bool
 }
 
 type tmplDotType struct {
@@ -35,10 +37,24 @@ type tmplDotType struct {
 	HasWData bool
 }
 
+func (me *tmplDotType) isIfaceSlice(name string) bool {
+	if i := strings.Index(name, "["); i > 0 {
+		name = name[:i]
+		for _, f := range me.Fields {
+			if f.FName == name {
+				return f.isIfaceSlice
+			}
+		}
+	}
+	return false
+}
+
 type tmplDotField struct {
 	FName string
 	TmplW string
 	TmplR string
+
+	isIfaceSlice bool
 }
 
 const tmplPkg = `package {{.PName}}
@@ -49,6 +65,9 @@ import (
 	"bytes"
 	"io"
 	"unsafe"
+	{{range $key, $val := .Imps}}
+	"{{ $key -}}"
+	{{- end}}
 )
 
 {{range .Types}}

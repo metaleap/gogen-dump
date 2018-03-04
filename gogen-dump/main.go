@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump"}
+	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump", Imps: map[string]bool{}}
 	filePathSrc = udevgo.GopathSrc(tdot.ProgHint, "test-struct.go")
 	typeNames   = []string{"testStruct", "embName"}
 	ts          = map[*ast.TypeSpec]*ast.StructType{}
@@ -83,7 +83,8 @@ func genDump() {
 				}
 			}
 			if ident := typeIdent(fld.Type); ident != "" {
-				tf.TmplR, tf.TmplW = genPrimRW(tf.FName, "", &tdot.Types[i], ident, 0, 0, taggedunion)
+				tf.isIfaceSlice = (ident == "[]interface{}")
+				tf.TmplR, tf.TmplW = genForNamedTypeRW(tf.FName, "", &tdot.Types[i], ident, 0, 0, taggedunion)
 			} else {
 				tf.TmplW = "//no-ident:" + fmt.Sprintf("%T", fld.Type)
 			}
@@ -114,15 +115,19 @@ func typeIdent(t ast.Expr) string {
 			return "[" + lit.Value + "]" + typeIdent(arr.Elt)
 		}
 		return "[]" + typeIdent(arr.Elt)
+	} else if ht, _ := t.(*ast.MapType); ht != nil {
+		return "[" + typeIdent(ht.Key) + "]" + typeIdent(ht.Value)
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
-		return sel.X.(*ast.Ident).Name + "." + sel.Sel.Name
+		pkgname := sel.X.(*ast.Ident).Name
+		tdot.Imps[pkgname] = true
+		return pkgname + "." + sel.Sel.Name
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
 		return "interface{}"
 	}
 	panic(fmt.Sprintf("%T", t))
 }
 
-func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
+func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
 	nf, mfw, mfr, lf := fieldName, "me."+fieldName, "me."+fieldName, "l_"+fieldName
 	if altNoMe != "" {
 		if mfw = altNoMe; iterDepth > 0 {
@@ -165,6 +170,8 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 		tmplR = genSizedR(mfr, typeName, "int64")
 	default:
 		if typeName[0] == '*' {
+			// POINTER
+
 			var numindir int
 			for _, r := range typeName {
 				if r == '*' {
@@ -173,7 +180,7 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 					break
 				}
 			}
-			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth, taggedUnion)
+			tr, tw := genForNamedTypeRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth, taggedUnion)
 			for i := 0; i < numindir; i++ {
 				setnil := "; " + mfr + " = nil "
 				if ustr.Pref(mfr, "v_") {
@@ -200,8 +207,13 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			tmplW += "\n\t\t" + tw
 			tmplW += "\n\t" + ustr.Times("}", numindir)
 		} else if pclose := ustr.Pos(typeName[1:], "]") + 1; typeName[0] == '[' && pclose > 0 {
-			slen := typeName[1:pclose]
-			if slen == "" {
+			// ARRAY / SLICE / MAP
+
+			ismap, slen := false, typeName[1:pclose]
+			if _, errnum := strconv.Atoi(slen); slen != "" && errnum != nil {
+				ismap, typeName = true, "map"+typeName
+			}
+			if slen == "" || ismap {
 				slen = "int(" + lf + ")"
 				tmplR += genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
 				tmplW += lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
@@ -209,21 +221,42 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 				tmplR += mfr + "= " + typeName + "{} ; "
 			}
 			idx := ustr.Times("i", iterDepth+1) + "_" + nf
-			tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-			tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-			tr, _ := genPrimRW(idx, mfr, t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
-			tmplR += "\n\t\t" + tr
-			_, tw := genPrimRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
-			tmplW += "\n\t\t" + tw
-			tmplR += "\n\t}"
-			tmplW += "\n\t}"
+
+			if ismap {
+				mk, mv := ustr.Times("mk", iterDepth+1)+"_"+nf, ustr.Times("mv", iterDepth+1)+"_"+nf
+				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
+
+				typeName = typeName[3:] // strip map prefix again
+				_, tw := genForNamedTypeRW(mk, mk, t, typeName[1:pclose], 0, iterDepth+1, taggedUnion)
+				tmplW += "\n\t\t" + tw
+				_, tw = genForNamedTypeRW(mv, mv, t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tmplW += "\n\t\t" + tw
+
+				tmplR += "\n\t}"
+				tmplW += "\n\t}"
+			} else {
+				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				if ustr.Pref(mfr, "me.") && t.isIfaceSlice(mfr[3:]) {
+					mfr = mfr + ".(" + typeName + ")"
+				}
+				tr, _ := genForNamedTypeRW(idx, mfr, t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tmplR += "\n\t\t" + tr
+				_, tw := genForNamedTypeRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tmplW += "\n\t\t" + tw
+				tmplR += "\n\t}"
+				tmplW += "\n\t}"
+			}
 		} else if len(taggedUnion) > 0 {
+			// TAGGED INTERFACE
+
 			tmplR += "t_" + nf + " := data[pos] ; pos++ ; switch t_" + nf + " {"
 			tmplW += "switch t_" + nf + " := " + mfw + ".(type) {"
 			for ti, tu := range taggedUnion {
-				tr, _ := genPrimRW(nf, mfr, t, tu, 0, iterDepth, nil)
+				tr, _ := genForNamedTypeRW(nf, mfr, t, tu, 0, iterDepth, nil)
 				tmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + tr
-				_, tw := genPrimRW(nf, "t_"+nf, t, tu, 0, iterDepth, nil)
+				_, tw := genForNamedTypeRW(nf, "t_"+nf, t, tu, 0, iterDepth, nil)
 				tmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
 			}
 			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + " = nil"
@@ -231,6 +264,8 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			tmplR += "\n\t}"
 			tmplW += "\n\t}"
 		} else {
+			// OTHER
+
 			if ustr.Pref(mfr, "v_") {
 				tmplR = mfr + "= " + typeName + "{} ; "
 			}
@@ -262,6 +297,10 @@ func genSizedR(mfr string, typeName string, byteSize string) string {
 func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 	if byteSize == "int64" || byteSize == "uint64" {
 		return byteSize + "_" + fieldName + " := " + byteSize + "(" + mfw + ") ; buf.Write(((*[8]byte)(unsafe.Pointer(&" + byteSize + "_" + fieldName + ")))[:])"
+	} else if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")") {
+		return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[2:len(mfw)-1] + ")))[:])"
+	} else if mfw[0] == '*' {
+		return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[1:] + ")))[:])"
 	}
 	return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(&(" + mfw + "))))[:])"
 }
