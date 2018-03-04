@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"golang.org/x/tools/go/loader"
 	"os"
 	"path/filepath"
@@ -86,7 +87,7 @@ func genDump() {
 				tf.TmplR = "t_" + nf + " := data[pos] ; pos++ ; switch t_" + nf + " {"
 				tf.TmplW = "switch t_" + nf + " := " + mf + ".(type) {"
 				for ti, tu := range taggedunion {
-					tr, tw := genPrimRW(tf.FName, "t_"+nf, &tdot.Types[i], tu, 0)
+					tr, tw := genPrimRW(tf.FName, "t_"+nf, &tdot.Types[i], tu, 0, 0)
 					tf.TmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + tr
 					tf.TmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
 				}
@@ -95,7 +96,7 @@ func genDump() {
 				tf.TmplR += "\n\t}"
 				tf.TmplW += "\n\t}"
 			} else if ident := typeIdent(fld.Type); ident != "" {
-				tf.TmplR, tf.TmplW = genPrimRW(tf.FName, "", &tdot.Types[i], ident, 0)
+				tf.TmplR, tf.TmplW = genPrimRW(tf.FName, "", &tdot.Types[i], ident, 0, 0)
 			} else {
 				tf.TmplW = "//no-ident:" + fmt.Sprintf("%T", fld.Type)
 			}
@@ -122,6 +123,9 @@ func typeIdent(t ast.Expr) string {
 	} else if star, _ := t.(*ast.StarExpr); star != nil {
 		return "*" + typeIdent(star.X)
 	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
+		if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
+			return "[" + lit.Value + "]" + typeIdent(arr.Elt)
+		}
 		return "[]" + typeIdent(arr.Elt)
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		return sel.X.(*ast.Ident).Name + "." + sel.Sel.Name
@@ -131,15 +135,17 @@ func typeIdent(t ast.Expr) string {
 	panic(fmt.Sprintf("%T", t))
 }
 
-func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int) (tmplR string, tmplW string) {
+func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int) (tmplR string, tmplW string) {
 	nf, mfw, mfr, lf := fieldName, "me."+fieldName, "me."+fieldName, "l_"+fieldName
 	if altNoMe != "" {
 		mfw = altNoMe
 	}
 	if numIndir > 0 {
-		mfr = "v_" + fieldName + ":"
+		mfr = "v_" + nf + ":"
 	}
-	mfw = ustr.Times("*", numIndir) + mfw
+	if numIndir > 0 {
+		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
+	}
 	switch typeName {
 	case "bool":
 		tmplW = "if " + mfw + " { buf.WriteByte(1) } else { buf.WriteByte(0) }"
@@ -178,7 +184,7 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 					break
 				}
 			}
-			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir)
+			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth)
 			for i := 0; i < numindir; i++ {
 				tmplR += "if data[pos] == 0 { pos++ } else { pos++ ; "
 				tmplW += "if " + ustr.Times("*", i) + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; "
@@ -186,18 +192,27 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := 0; i < numindir; i++ {
 				if i == 0 {
-					tmplR += "p0_" + fieldName + " := &v_" + fieldName + " ; "
+					tmplR += "p0_" + nf + " := &v_" + nf + " ; "
 				} else if i == numindir-1 {
-					tmplR += mfr + " = &p" + strconv.Itoa(i-1) + "_" + fieldName
+					tmplR += mfr + " = &p" + strconv.Itoa(i-1) + "_" + nf
 				} else {
-					tmplR += "p" + strconv.Itoa(i) + "_" + fieldName + " := &p" + strconv.Itoa(i-1) + "_" + fieldName + " ; "
+					tmplR += "p" + strconv.Itoa(i) + "_" + nf + " := &p" + strconv.Itoa(i-1) + "_" + nf + " ; "
 				}
 			}
 			tmplR += "\n\t" + ustr.Times("}", numindir)
 			tmplW += "\n\t\t" + tw
 			tmplW += "\n\t" + ustr.Times("}", numindir)
-		} else if typeName[0] == '[' {
-
+		} else if pclose := ustr.Pos(typeName[1:], "]") + 1; typeName[0] == '[' && pclose > 0 {
+			slen := typeName[1:pclose]
+			if slen == "" {
+				tmplW = lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
+				slen = "len(" + mfw + ")"
+			}
+			idx := ustr.Times("i", iterDepth+1) + "_" + nf
+			tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+			_, tw := genPrimRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1)
+			tmplW += "\n\t\t" + tw
+			tmplW += "\n\t}"
 		} else {
 			tmplR = genLenR(nf) + " ; if err = " + mfw + ".UnmarshalBinary(data[pos : pos+l_" + nf + "]); err != nil { return } ; pos += l_" + nf
 			tmplW = "d_" + nf + ", e_" + nf + " := " + mfw + ".MarshalBinary() ; if err = e_" + nf + "; err != nil { return } ; l_" + nf + " := uint64(len(d_" + nf + ")) ; " + genLenW(nf) + " ; buf.Write(d_" + nf + ")"
@@ -225,7 +240,7 @@ func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 	if byteSize == "int64" || byteSize == "uint64" {
 		return byteSize + "_" + fieldName + " := " + byteSize + "(" + mfw + ") ; buf.Write(((*[8]byte)(unsafe.Pointer(&" + byteSize + "_" + fieldName + ")))[:])"
 	}
-	return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(&" + mfw + ")))[:])"
+	return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(&(" + mfw + "))))[:])"
 }
 
 func genLenR(fieldName string) string {
