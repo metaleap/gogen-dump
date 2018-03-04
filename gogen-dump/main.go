@@ -116,7 +116,7 @@ func typeIdent(t ast.Expr) string {
 		}
 		return "[]" + typeIdent(arr.Elt)
 	} else if ht, _ := t.(*ast.MapType); ht != nil {
-		return "[" + typeIdent(ht.Key) + "]" + typeIdent(ht.Value)
+		return "map[" + typeIdent(ht.Key) + "]" + typeIdent(ht.Value)
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		pkgname := sel.X.(*ast.Ident).Name
 		tdot.Imps[pkgname] = true
@@ -139,6 +139,8 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 	if numIndir > 0 {
 		mfr = "v_" + nf + ":"
 		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
+	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "mk_") || ustr.Pref(nf, "mv_")) {
+		mfr = "mkv_" + nf
 	}
 	switch typeName {
 	case "bool":
@@ -182,18 +184,18 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 			}
 			tr, tw := genForNamedTypeRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth, taggedUnion)
 			for i := 0; i < numindir; i++ {
-				setnil := "; " + mfr + " = nil "
-				if ustr.Pref(mfr, "v_") {
-					setnil = ""
+				if ustr.Pref(mfr, "v_") || ustr.Pref(mfr, "mkv_") || ustr.Has(mfr, "[") {
+					tmplR += "if pos++; data[pos-1] != 0 { "
+				} else {
+					tmplR += "if pos++; data[pos-1] == 0 { " + mfr + " = nil } else { "
 				}
-				tmplR += "if data[pos] == 0 { pos++ " + setnil + "} else { pos++ ; "
 				tmplW += "if " + ustr.Times("*", i) + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; "
 			}
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := 0; i < numindir; i++ {
 				if i == 0 {
 					if i == numindir-1 {
-						tmplR += mfr + " = &v_" + nf
+						tmplR += mfr + "= &v_" + nf
 					} else {
 						tmplR += "p0_" + nf + " := &v_" + nf + " ; "
 					}
@@ -206,13 +208,10 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 			tmplR += "\n\t" + ustr.Times("}", numindir)
 			tmplW += "\n\t\t" + tw
 			tmplW += "\n\t" + ustr.Times("}", numindir)
-		} else if pclose := ustr.Pos(typeName[1:], "]") + 1; typeName[0] == '[' && pclose > 0 {
+		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.Pos(typeName[1:], "]")+1; pclose > 0 && (typeName[0] == '[' || ismap) {
 			// ARRAY / SLICE / MAP
 
-			ismap, slen := false, typeName[1:pclose]
-			if _, errnum := strconv.Atoi(slen); slen != "" && errnum != nil {
-				ismap, typeName = true, "map"+typeName
-			}
+			slen := typeName[1:pclose]
 			if slen == "" || ismap {
 				slen = "int(" + lf + ")"
 				tmplR += genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
@@ -223,12 +222,18 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 			idx := ustr.Times("i", iterDepth+1) + "_" + nf
 
 			if ismap {
-				mk, mv := ustr.Times("mk", iterDepth+1)+"_"+nf, ustr.Times("mv", iterDepth+1)+"_"+nf
+				mk, mv := ustr.Times("mk_", iterDepth+1)+"_"+nf, ustr.Times("mv_", iterDepth+1)+nf
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
 
-				typeName = typeName[3:] // strip map prefix again
-				_, tw := genForNamedTypeRW(mk, mk, t, typeName[1:pclose], 0, iterDepth+1, taggedUnion)
+				tmplR += "\n\t\tvar mkv_" + mk + " " + typeName[4:pclose]
+				tmplR += "\n\t\tvar mkv_" + mv + " " + typeName[pclose+1:]
+				tr, _ := genForNamedTypeRW(mk, "", t, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
+				tmplR += "\n\t\t" + tr
+				tr, _ = genForNamedTypeRW(mv, "", t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tmplR += "\n\t\t" + tr
+				tmplR += "\n\t\t" + mfr + "[mkv_" + mk + "] = mkv_" + mv
+				_, tw := genForNamedTypeRW(mk, mk, t, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
 				_, tw = genForNamedTypeRW(mv, mv, t, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw

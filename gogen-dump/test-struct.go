@@ -6,7 +6,7 @@ type testStruct struct {
 	Balance    *[3]**int16
 	AccountAge int
 	Any        []interface{} `gendump:"*embName []embName []*embName []*float32"`
-	Foo        map[string]complex128
+	Foo        [][2]map[rune]***[]*int16
 	Age        ***uint
 	R          rune
 }
