@@ -12,7 +12,7 @@ import (
 func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	var data bytes.Buffer
 	
-	me.embName.writeTo(&data) ; l_embName := uint64(data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:]) ; data.WriteTo(buf)
+	if err = me.embName.writeTo(&data); err != nil { return } ; l_embName := uint64(data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:]) ; data.WriteTo(buf)
 	
 	if me.Deleted { buf.WriteByte(1) } else { buf.WriteByte(0) }
 	
@@ -37,11 +37,11 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 			buf.WriteByte(0)
 	}
 	
-	//ident:error
+	d_Marsh, e_Marsh := me.Marsh.MarshalBinary() ; if err = e_Marsh; err != nil { return } ; l_Marsh := uint64(len(d_Marsh)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_Marsh))[:]) ; buf.Write(d_Marsh)
 	
-	//no-ident:*ast.SelectorExpr
-	
-	uint64_Age := uint64(me.Age) ; buf.Write(((*[8]byte)(unsafe.Pointer(&uint64_Age)))[:])
+	if me.Age == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *me.Age == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if **me.Age == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		uint64_Age := uint64(***me.Age) ; buf.Write(((*[8]byte)(unsafe.Pointer(&uint64_Age)))[:])
+	}}}
 	
 	buf.Write(((*[4]byte)(unsafe.Pointer(&me.R)))[:])
 	
@@ -67,40 +67,40 @@ func (me *testStruct) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
-	var i int
+	var pos int
 	
-	l_embName := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; me.embName.UnmarshalBinary(data[i : i+l_embName]) ; i += l_embName
+	l_embName := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; if err = me.embName.UnmarshalBinary(data[pos : pos+l_embName]); err != nil { return } ; pos += l_embName
 	
-	me.Deleted = (data[i] == 1) ; i++
+	me.Deleted= (data[pos] == 1) ; pos++
 	
-	me.Balance = uintptr(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8
+	me.Balance= uintptr(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8
 	
-	me.AccountAge = int(*((*int64)(unsafe.Pointer(&data[i])))) ; i += 8
+	me.AccountAge= int(*((*int64)(unsafe.Pointer(&data[pos])))) ; pos += 8
 	
-	t_Any := data[i] ; i++ ; switch t_Any {
+	t_Any := data[pos] ; pos++ ; switch t_Any {
 		case 1:
-			me.Any = (data[i] == 1) ; i++
+			me.Any= (data[pos] == 1) ; pos++
 		case 2:
-			me.Any = data[i] ; i++
+			me.Any= data[pos] ; pos++
 		case 3:
-			l_Any := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; me.Any = string(data[i : i+l_Any]) ; i += l_Any
+			l_Any := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; me.Any= string(data[pos : pos+l_Any]) ; pos += l_Any
 		case 4:
-			me.Any = int(*((*int64)(unsafe.Pointer(&data[i])))) ; i += 8
+			me.Any= int(*((*int64)(unsafe.Pointer(&data[pos])))) ; pos += 8
 		case 5:
-			me.Any = *((*float64)(unsafe.Pointer(&data[i]))) ; i += 8
+			me.Any= *((*float64)(unsafe.Pointer(&data[pos]))) ; pos += 8
 		case 6:
-			me.Any = *((*float32)(unsafe.Pointer(&data[i]))) ; i += 4
+			me.Any= *((*float32)(unsafe.Pointer(&data[pos]))) ; pos += 4
 		default:
 			me.Any = nil
 	}
 	
+	l_Marsh := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; if err = me.Marsh.UnmarshalBinary(data[pos : pos+l_Marsh]); err != nil { return } ; pos += l_Marsh
 	
+	if data[pos] == 0 { pos++ } else { pos++ ; if data[pos] == 0 { pos++ } else { pos++ ; if data[pos] == 0 { pos++ } else { pos++ ; 
+		v_Age:= uint(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; p0_Age := &v_Age ; p1_Age := &p0_Age ; me.Age = &p1_Age
+	}}}
 	
-	
-	
-	me.Age = uint(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8
-	
-	me.R = *((*rune)(unsafe.Pointer(&data[i]))) ; i += 4
+	me.R= *((*rune)(unsafe.Pointer(&data[pos]))) ; pos += 4
 	
 	return
 }
@@ -110,9 +110,11 @@ func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
 	
 	l_FirstName := uint64(len(me.FirstName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:]) ; buf.WriteString(me.FirstName)
 	
-	//no-ident:*ast.ArrayType
 	
-	l_LastName := uint64(len(me.LastName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString(me.LastName)
+	
+	if me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		l_LastName := uint64(len(**me.LastName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString(**me.LastName)
+	}}
 	
 	return
 }
@@ -136,13 +138,15 @@ func (me *embName) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *embName) UnmarshalBinary(data []byte) (err error) {
-	var i int
+	var pos int
 	
-	l_FirstName := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; me.FirstName = string(data[i : i+l_FirstName]) ; i += l_FirstName
+	l_FirstName := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; me.FirstName= string(data[pos : pos+l_FirstName]) ; pos += l_FirstName
 	
 	
 	
-	l_LastName := int(*((*uint64)(unsafe.Pointer(&data[i])))) ; i += 8 ; me.LastName = string(data[i : i+l_LastName]) ; i += l_LastName
+	if data[pos] == 0 { pos++ } else { pos++ ; if data[pos] == 0 { pos++ } else { pos++ ; 
+		l_LastName := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_LastName:= string(data[pos : pos+l_LastName]) ; pos += l_LastName ; p0_LastName := &v_LastName ; me.LastName = &p0_LastName
+	}}
 	
 	return
 }

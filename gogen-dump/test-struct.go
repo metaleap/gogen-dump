@@ -10,14 +10,16 @@ type testStruct struct {
 	Balance    uintptr
 	AccountAge int
 	Any        interface{} `gendump:"bool byte string int float64 float32"`
-	Err        error
-	Marsh      encoding.BinaryMarshaler
-	Age        uint
-	R          rune
+	Marsh      interface {
+		encoding.BinaryMarshaler
+		encoding.BinaryUnmarshaler
+	}
+	Age ***uint
+	R   rune
 }
 
 type embName struct {
 	FirstName   string
 	MiddleNames []string
-	LastName    string
+	LastName    **string
 }

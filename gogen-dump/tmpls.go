@@ -79,7 +79,7 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
-	var i int
+	var pos int
 	{{range .Fields}}
 	{{.TmplR}}
 	{{end}}
