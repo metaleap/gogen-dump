@@ -138,7 +138,9 @@ func typeIdent(t ast.Expr) string {
 func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string, numIndir int, iterDepth int) (tmplR string, tmplW string) {
 	nf, mfw, mfr, lf := fieldName, "me."+fieldName, "me."+fieldName, "l_"+fieldName
 	if altNoMe != "" {
-		mfw = altNoMe
+		if mfw = altNoMe; iterDepth > 0 {
+			mfr = ustr.TrimR(altNoMe, ":") + "[" + fieldName + "]"
+		}
 	}
 	if numIndir > 0 {
 		mfr = "v_" + nf + ":"
@@ -192,7 +194,11 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := 0; i < numindir; i++ {
 				if i == 0 {
-					tmplR += "p0_" + nf + " := &v_" + nf + " ; "
+					if i == numindir-1 {
+						tmplR += mfr + " = &v_" + nf
+					} else {
+						tmplR += "p0_" + nf + " := &v_" + nf + " ; "
+					}
 				} else if i == numindir-1 {
 					tmplR += mfr + " = &p" + strconv.Itoa(i-1) + "_" + nf
 				} else {
@@ -205,13 +211,18 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 		} else if pclose := ustr.Pos(typeName[1:], "]") + 1; typeName[0] == '[' && pclose > 0 {
 			slen := typeName[1:pclose]
 			if slen == "" {
+				slen = "int(" + lf + ")"
+				tmplR = genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
 				tmplW = lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
-				slen = "len(" + mfw + ")"
 			}
 			idx := ustr.Times("i", iterDepth+1) + "_" + nf
+			tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 			tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+			tr, _ := genPrimRW(idx, mfr, t, typeName[pclose+1:], 0, iterDepth+1)
+			tmplR += "\n\t\t" + tr
 			_, tw := genPrimRW(idx, mfw+"["+idx+"]", t, typeName[pclose+1:], 0, iterDepth+1)
 			tmplW += "\n\t\t" + tw
+			tmplR += "\n\t}"
 			tmplW += "\n\t}"
 		} else {
 			tmplR = genLenR(nf) + " ; if err = " + mfw + ".UnmarshalBinary(data[pos : pos+l_" + nf + "]); err != nil { return } ; pos += l_" + nf

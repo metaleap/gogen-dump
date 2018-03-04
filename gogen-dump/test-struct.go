@@ -7,7 +7,7 @@ import (
 type testStruct struct {
 	embName
 	Deleted    bool
-	Balance    [123]**uintptr
+	Balance    *[]**int16
 	AccountAge int
 	Any        interface{} `gendump:"bool byte string int float64 float32"`
 	Marsh      interface {
@@ -19,7 +19,7 @@ type testStruct struct {
 }
 
 type embName struct {
-	FirstName   string
-	MiddleNames [7]**[]**uint16
-	LastName    **string
+	FirstName string
+	MiddleNames/*[]**[7]**/ uint16
+	LastName **string
 }
