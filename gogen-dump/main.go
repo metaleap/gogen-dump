@@ -133,8 +133,6 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 	}
 	if numIndir > 0 {
 		mfr = "v_" + nf + ":"
-	}
-	if numIndir > 0 {
 		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
 	}
 	switch typeName {
@@ -177,7 +175,11 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			}
 			tr, tw := genPrimRW(nf, altNoMe, t, typeName[numindir:], numindir, iterDepth, taggedUnion)
 			for i := 0; i < numindir; i++ {
-				tmplR += "if data[pos] == 0 { pos++ } else { pos++ ; "
+				setnil := "; " + mfr + " = nil "
+				if ustr.Pref(mfr, "v_") {
+					setnil = ""
+				}
+				tmplR += "if data[pos] == 0 { pos++ " + setnil + "} else { pos++ ; "
 				tmplW += "if " + ustr.Times("*", i) + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; "
 			}
 			tmplR += "\n\t\t" + tr + " ; "
@@ -229,12 +231,18 @@ func genPrimRW(fieldName string, altNoMe string, t *tmplDotType, typeName string
 			tmplR += "\n\t}"
 			tmplW += "\n\t}"
 		} else {
-			tmplR = genLenR(nf) + " ; if err = " + mfw + ".UnmarshalBinary(data[pos : pos+l_" + nf + "]); err != nil { return } ; pos += l_" + nf
-			tmplW = "d_" + nf + ", e_" + nf + " := " + mfw + ".MarshalBinary() ; if err = e_" + nf + "; err != nil { return } ; l_" + nf + " := uint64(len(d_" + nf + ")) ; " + genLenW(nf) + " ; buf.Write(d_" + nf + ")"
+			if ustr.Pref(mfr, "v_") {
+				tmplR = mfr + "= " + typeName + "{} ; "
+			}
+			tmplR += genLenR(nf) + " ; if err = " + ustr.TrimR(mfr, ":") + ".UnmarshalBinary(data[pos : pos+l_" + nf + "]); err != nil { return } ; pos += l_" + nf
+			tmplW += "d_" + nf + ", e_" + nf + " := " + mfw + ".MarshalBinary() ; if err = e_" + nf + "; err != nil { return } ; l_" + nf + " := uint64(len(d_" + nf + ")) ; " + genLenW(nf) + " ; buf.Write(d_" + nf + ")"
 
 			for tspec := range ts {
 				if tspec.Name.Name == typeName {
 					t.HasWData = true
+					if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
+						mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
+					}
 					tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := uint64(data.Len()) ; " + genLenW(nf) + " ; data.WriteTo(buf)"
 					break
 				}
