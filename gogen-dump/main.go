@@ -76,7 +76,7 @@ func genDump() {
 				panic(l)
 			}
 			if taggedunion = nil; fld.Tag != nil {
-				if pos := ustr.Pos(fld.Tag.Value, "gendump:\""); pos >= 0 {
+				if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
 					tagval := fld.Tag.Value[pos+9:]
 					tagval = tagval[:ustr.Pos(tagval, "\"")]
 					taggedunion = ustr.Split(tagval, " ")
