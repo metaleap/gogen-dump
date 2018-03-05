@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump", Imps: map[string]string{}}
+	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]string{}}
 	filePathSrc = udevgo.GopathSrc(tdot.ProgHint, "test-struct.go")
 	typeNames   = []string{"testStruct", "embName"}
 	ts          = map[*ast.TypeSpec]*ast.StructType{}
