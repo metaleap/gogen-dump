@@ -71,13 +71,11 @@ func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
 }
 
 func (me *{{.TName}}) WriteTo(w io.Writer) (int64, error) {
-	if data, err := me.MarshalBinary(); err == nil {
-		var n int
-		n, err = w.Write(data)
-		return int64(n), err
-	} else {
+	var buf bytes.Buffer
+	if err := me.writeTo(&buf); err != nil {
 		return 0, err
 	}
+	return buf.WriteTo(w)
 }
 
 func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {

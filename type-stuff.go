@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"reflect"
-	"unsafe"
+	// "reflect"
+	// "unsafe"
 
 	"github.com/go-leap/dev/go"
 	"github.com/go-leap/str"
@@ -113,25 +113,25 @@ func typeIdent(t ast.Expr) (typeSpec string, isFixedSize bool) {
 	panic(fmt.Sprintf("%T", t))
 }
 
-// nicked from teh_cmc/gools/zerocopy:
-// converts a string to a []byte without any copy.
-// NOTE: do not ever modify the returned byte slice.
-// NOTE: do not ever use the returned byte slice once the original string went
-// out of scope.
-func zeroCopyStringToBytes(s string) (b []byte) {
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	bh.Len, bh.Cap, bh.Data = sh.Len, sh.Len, sh.Data
-	return
-}
+// // nicked from teh_cmc/gools/zerocopy:
+// // converts a string to a []byte without any copy.
+// // NOTE: do not ever modify the returned byte slice.
+// // NOTE: do not ever use the returned byte slice once the original string went
+// // out of scope.
+// func zeroCopyStringToBytes(s string) (b []byte) {
+// 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+// 	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+// 	bh.Len, bh.Cap, bh.Data = sh.Len, sh.Len, sh.Data
+// 	return
+// }
 
-// nicked from teh_cmc/gools/zerocopy:
-// converts a []byte to a string without any copy.
-// NOTE: do not ever use the returned string once the original []byte went
-// out of scope.
-func zeroCopyBytesToString(b []byte) (s string) {
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	sh.Len, sh.Data = bh.Len, bh.Data
-	return
-}
+// // nicked from teh_cmc/gools/zerocopy:
+// // converts a []byte to a string without any copy.
+// // NOTE: do not ever use the returned string once the original []byte went
+// // out of scope.
+// func zeroCopyBytesToString(b []byte) (s string) {
+// 	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+// 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+// 	sh.Len, sh.Data = bh.Len, bh.Data
+// 	return
+// }
