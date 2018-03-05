@@ -33,6 +33,7 @@ type tmplDotField struct {
 	FName string
 	TmplW string
 	TmplR string
+	Skip  bool
 
 	isIfaceSlice bool
 }

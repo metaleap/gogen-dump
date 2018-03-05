@@ -2,7 +2,7 @@ package main
 
 type testStruct struct {
 	embName
-	Deleted    bool
+	Deleted    bool `gogen-dump:"-"`
 	Balance    *[3]**int16
 	AccountAge int
 	Any        []interface{} `gogen-dump:"*embName []embName []*embName []*float32"`

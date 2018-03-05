@@ -14,6 +14,12 @@ import (
 	"github.com/go-leap/str"
 )
 
+const (
+	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream
+	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
+	safeVarInts = false
+)
+
 var (
 	tdot        = tmplDotFile{ProgHint: "github.com/go-leap/gen/gogen-dump", Imps: map[string]string{}}
 	filePathSrc = udevgo.GopathSrc(tdot.ProgHint, "test-struct.go")
@@ -79,12 +85,18 @@ func genDump() {
 				if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
 					tagval := fld.Tag.Value[pos+12:]
 					tagval = tagval[:ustr.Pos(tagval, "\"")]
-					taggedunion = ustr.Split(tagval, " ")
+					if tagval == "-" {
+						tf.Skip = true
+					} else {
+						taggedunion = ustr.Split(tagval, " ")
+					}
 				}
 			}
-			if ident := typeIdent(fld.Type); ident != "" {
+			if ident := typeIdent(fld.Type); ident != "" && !tf.Skip {
 				tf.isIfaceSlice = (ident == "[]interface{}")
 				tf.TmplR, tf.TmplW = genForNamedTypeRW(tf.FName, "", &tdot.Types[i], ident, 0, 0, taggedunion)
+			} else {
+				tf.Skip = true
 			}
 		}
 		i++
@@ -163,6 +175,10 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "mk_") || ustr.Pref(nf, "mv_")) {
 		mfr = "mkv_" + nf
 	}
+	var cast string
+	if safeVarInts {
+		cast = "uint64"
+	}
 	switch typeName {
 	case "bool":
 		tmplW = "if " + mfw + " { buf.WriteByte(1) } else { buf.WriteByte(0) }"
@@ -171,7 +187,7 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 		tmplW = "buf.WriteByte(" + mfw + ")"
 		tmplR = mfr + "= data[pos] ; pos++"
 	case "string":
-		tmplW = lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; buf.WriteString(" + mfw + ")"
+		tmplW = lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nf) + " ; buf.WriteString(" + mfw + ")"
 		tmplR = genLenR(nf) + " ; " + mfr + "= string(data[pos : pos+" + lf + "]) ; pos += " + lf
 	case "int16", "uint16":
 		tmplW = genSizedW(nf, mfw, "2")
@@ -236,7 +252,7 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 			if slen == "" || ismap {
 				slen = "int(" + lf + ")"
 				tmplR += genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
-				tmplW += lf + " := uint64(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
+				tmplW += lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
 			} else if numIndir > 0 {
 				tmplR += mfr + "= " + typeName + "{} ; "
 			}
@@ -296,7 +312,7 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 				tmplR = mfr + "= " + typeName + "{} ; "
 			}
 			tmplR += genLenR(nf) + " ; if err = " + ustr.TrimR(mfr, ":") + ".UnmarshalBinary(data[pos : pos+l_" + nf + "]); err != nil { return } ; pos += l_" + nf
-			tmplW += "d_" + nf + ", e_" + nf + " := " + mfw + ".MarshalBinary() ; if err = e_" + nf + "; err != nil { return } ; l_" + nf + " := uint64(len(d_" + nf + ")) ; " + genLenW(nf) + " ; buf.Write(d_" + nf + ")"
+			tmplW += "d_" + nf + ", e_" + nf + " := " + mfw + ".MarshalBinary() ; if err = e_" + nf + "; err != nil { return } ; l_" + nf + " := " + cast + "(len(d_" + nf + ")) ; " + genLenW(nf) + " ; buf.Write(d_" + nf + ")"
 
 			for tspec := range ts {
 				if tspec.Name.Name == typeName {
@@ -304,7 +320,7 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 					if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 						mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
 					}
-					tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := uint64(data.Len()) ; " + genLenW(nf) + " ; data.WriteTo(buf)"
+					tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nf) + " ; data.WriteTo(buf)"
 					break
 				}
 			}
@@ -315,15 +331,22 @@ func genForNamedTypeRW(fieldName string, altNoMe string, t *tmplDotType, typeNam
 
 func genSizedR(mfr string, typeName string, byteSize string) string {
 	if byteSize == "int64" || byteSize == "uint64" {
-		return mfr + "= " + typeName + "(*((*" + byteSize + ")(unsafe.Pointer(&data[pos])))) ; pos += 8"
+		if safeVarInts {
+			return mfr + "= " + typeName + "(*((*" + byteSize + ")(unsafe.Pointer(&data[pos])))) ; pos += 8"
+		}
+		byteSize = "8"
 	}
 	return mfr + "= *((*" + typeName + ")(unsafe.Pointer(&data[pos]))) ; pos += " + byteSize
 }
 
 func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 	if byteSize == "int64" || byteSize == "uint64" {
-		return byteSize + "_" + fieldName + " := " + byteSize + "(" + mfw + ") ; buf.Write(((*[8]byte)(unsafe.Pointer(&" + byteSize + "_" + fieldName + ")))[:])"
-	} else if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")") {
+		if safeVarInts {
+			return byteSize + "_" + fieldName + " := " + byteSize + "(" + mfw + ") ; buf.Write(((*[8]byte)(unsafe.Pointer(&" + byteSize + "_" + fieldName + ")))[:])"
+		}
+		byteSize = "8"
+	}
+	if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")") {
 		return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[2:len(mfw)-1] + ")))[:])"
 	} else if mfw[0] == '*' {
 		return "buf.Write(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[1:] + ")))[:])"
@@ -332,7 +355,10 @@ func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 }
 
 func genLenR(fieldName string) string {
-	return "l_" + fieldName + " := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8"
+	if safeVarInts {
+		return "l_" + fieldName + " := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8"
+	}
+	return "l_" + fieldName + " := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8"
 }
 
 func genLenW(fieldName string) string {
