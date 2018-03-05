@@ -77,7 +77,7 @@ func genDump() {
 			}
 			if taggedunion = nil; fld.Tag != nil {
 				if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
-					tagval := fld.Tag.Value[pos+9:]
+					tagval := fld.Tag.Value[pos+12:]
 					tagval = tagval[:ustr.Pos(tagval, "\"")]
 					taggedunion = ustr.Split(tagval, " ")
 				}
@@ -85,8 +85,6 @@ func genDump() {
 			if ident := typeIdent(fld.Type); ident != "" {
 				tf.isIfaceSlice = (ident == "[]interface{}")
 				tf.TmplR, tf.TmplW = genForNamedTypeRW(tf.FName, "", &tdot.Types[i], ident, 0, 0, taggedunion)
-			} else {
-				tf.TmplW = "//no-ident:" + fmt.Sprintf("%T", fld.Type)
 			}
 		}
 		i++
@@ -109,14 +107,25 @@ func typeIdent(t ast.Expr) string {
 	if ident, _ := t.(*ast.Ident); ident != nil {
 		return ident.Name
 	} else if star, _ := t.(*ast.StarExpr); star != nil {
-		return "*" + typeIdent(star.X)
-	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
-		if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
-			return "[" + lit.Value + "]" + typeIdent(arr.Elt)
+		if tident := typeIdent(star.X); tident != "" {
+			return "*" + tident
 		}
-		return "[]" + typeIdent(arr.Elt)
+		return ""
+	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
+		if tident := typeIdent(arr.Elt); tident != "" {
+			if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
+				return "[" + lit.Value + "]" + tident
+			}
+			return "[]" + tident
+		}
+		return ""
 	} else if ht, _ := t.(*ast.MapType); ht != nil {
-		return "map[" + typeIdent(ht.Key) + "]" + typeIdent(ht.Value)
+		if tidkey := typeIdent(ht.Key); tidkey != "" {
+			if tidval := typeIdent(ht.Value); tidval != "" {
+				return "map[" + tidkey + "]" + tidval
+			}
+		}
+		return ""
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		pkgname := sel.X.(*ast.Ident).Name
 		tdot.Imps[pkgname] = pkgname
@@ -131,6 +140,10 @@ func typeIdent(t ast.Expr) string {
 		return pkgname + "." + sel.Sel.Name
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
 		return "interface{}"
+	} else if fn, _ := t.(*ast.FuncType); fn != nil {
+		return ""
+	} else if ch, _ := t.(*ast.ChanType); ch != nil {
+		return ""
 	}
 	panic(fmt.Sprintf("%T", t))
 }

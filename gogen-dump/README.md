@@ -19,5 +19,5 @@ Supports all built-in primitive types plus:
 
 - other structs (or pointers/slices/maps/arrays/etc. referring to them) that have `gogen-dump`-generated un/marshaling, too
 - any structs (or pointers/slices/maps/arrays/etc. referring to them) implementing both `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`
-- `interface{}` (or `*interface{}`, `[]interface{}` etc.) fields denoted as unions/sums via a *Go struct field tag* such as `gogen-dump:"bool []byte somePkg.otherType *orAnotherType"` (should be concrete types in there, no further interfaces)
+- `interface{}` (or `[]interface{}`) fields denoted as unions/sums via a *Go struct field tag* such as `gogen-dump:"bool []byte somePkg.otherType *orAnotherType"` (should be concrete types in there, no further interfaces, maximum of 255 entries)
 - all these can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps to pointers of arrays etc.. — some truly unrealistic whacky combinations will generate broken/non-compiling code but these are truly hard to find and typically always something you'd never want in a proper code-base anyway, AFAICT so far

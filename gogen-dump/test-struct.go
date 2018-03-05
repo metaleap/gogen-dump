@@ -15,4 +15,6 @@ type embName struct {
 	FirstName   string
 	MiddleNames *[]***[4]*string
 	LastName    **string
+	Fn          func()
+	Ch          chan bool
 }
