@@ -9,6 +9,7 @@ type testStruct struct {
 	Foo        [][2]map[rune]***[]*int16
 	Age        ***uint
 	R          rune
+	By         byte
 }
 
 type embName struct {

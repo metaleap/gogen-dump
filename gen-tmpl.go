@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io"
 	"strings"
+	"text/template"
 )
 
 type tmplDotFile struct {
@@ -12,18 +14,12 @@ type tmplDotFile struct {
 }
 
 type tmplDotType struct {
-	TName    string
-	Fields   []*tmplDotField
-	HasWData bool
-}
-
-func (me *tmplDotType) isFixedSize() bool {
-	for i := range me.Fields {
-		if !me.Fields[i].isFixedSize {
-			return false
-		}
-	}
-	return true
+	TName       string
+	Fields      []*tmplDotField
+	HasWData    bool
+	HasB0Ptr    bool
+	HasB1Ptr    bool
+	isFixedSize bool
 }
 
 func (me *tmplDotType) isIfaceSlice(name string) bool {
@@ -45,9 +41,9 @@ type tmplDotField struct {
 
 	typeIdent    string
 	taggedUnion  []string
-	isFixedSize  bool
 	skip         bool
 	isIfaceSlice bool
+	isFixedSize  bool
 }
 
 const tmplPkg = `package {{.PName}}
@@ -66,6 +62,8 @@ import (
 {{range .Types}}
 func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
 	{{if .HasWData}}var data bytes.Buffer{{end}}
+	{{if .HasB0Ptr}}var b0 byte ; var b0s = (*((*[1]byte)(unsafe.Pointer(&b0))))[:] {{end}}
+	{{if .HasB1Ptr}}var b1 byte = 1 ; var b1s = (*((*[1]byte)(unsafe.Pointer(&b1))))[:] {{end}}
 	{{range .Fields}}
 	{{.TmplW}}
 	{{end}}
@@ -99,3 +97,11 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 }
 {{end}}
 `
+
+func genViaTmpl(file io.Writer) (err error) {
+	tmpl := template.New("gen-tmpl.go")
+	if _, err = tmpl.Parse(tmplPkg); err == nil {
+		err = tmpl.Execute(file, &tdot)
+	}
+	return
+}

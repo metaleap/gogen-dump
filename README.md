@@ -22,7 +22,7 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 ## Satisfies my own following exact spec that I found underserved by the ecosystem at time of writing:
 
 - no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema" (so `gogen-dump` only generates methods, not types)
-- no use of `reflect`, neither at generation time nor at at runtime, so private fields too can be (de)serialized
+- thanks to the above, no use of `reflect`-based struct type-def introspection at runtime or code-gen time, so private fields too can be (de)serialized
 - unlike `gob` and most other (de)serialization schemes, does not (de)serialize field names (or even field/type IDs or tags, except for specially-tagged `interface{}`/`[]interface{}`-typed fields as described below) but rather purely follows (generation-time) type *structure*
 
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:

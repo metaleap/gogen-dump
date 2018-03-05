@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"go/ast"
-	"go/token"
 	"golang.org/x/tools/go/loader"
 	"os"
 	"path/filepath"
@@ -81,95 +79,4 @@ func main() {
 	} else {
 		genDump()
 	}
-}
-
-func collectTypes() {
-	tdot.Types = make([]*tmplDotType, 0, len(ts))
-	for t, s := range ts {
-		tdt := &tmplDotType{TName: t.Name.Name, Fields: make([]*tmplDotField, 0, len(s.Fields.List))}
-		for _, fld := range s.Fields.List {
-			tdf := &tmplDotField{}
-			if l := len(fld.Names); l == 0 {
-				if ident, _ := fld.Type.(*ast.Ident); ident != nil {
-					tdf.FName = ident.Name
-				} else {
-					panic(fmt.Sprintf("%T", fld.Type))
-				}
-			} else if l == 1 {
-				tdf.FName = fld.Names[0].Name
-			} else {
-				panic(l)
-			}
-			if fld.Tag != nil {
-				if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
-					tagval := fld.Tag.Value[pos+12:]
-					tagval = tagval[:ustr.Pos(tagval, "\"")]
-					if tagval == "-" {
-						tdf.skip = true
-					} else {
-						tdf.taggedUnion = ustr.Split(tagval, " ")
-					}
-				}
-			}
-			if !tdf.skip {
-				if tdf.typeIdent = typeIdent(fld.Type); tdf.typeIdent == "" {
-					tdf.skip = true
-				} else {
-					tdf.isIfaceSlice = (tdf.typeIdent == "[]interface{}")
-				}
-			}
-			if !tdf.skip {
-				tdt.Fields = append(tdt.Fields, tdf)
-			}
-		}
-		if len(tdt.Fields) > 0 {
-			tdot.Types = append(tdot.Types, tdt)
-		}
-	}
-}
-
-// we go by type spec strings because they can also occur in struct-field-tags for tagged-unions
-func typeIdent(t ast.Expr) string {
-	if ident, _ := t.(*ast.Ident); ident != nil {
-		return ident.Name
-	} else if star, _ := t.(*ast.StarExpr); star != nil {
-		if tident := typeIdent(star.X); tident != "" {
-			return "*" + tident
-		}
-		return ""
-	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
-		if tident := typeIdent(arr.Elt); tident != "" {
-			if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
-				return "[" + lit.Value + "]" + tident
-			}
-			return "[]" + tident
-		}
-		return ""
-	} else if ht, _ := t.(*ast.MapType); ht != nil {
-		if tidkey := typeIdent(ht.Key); tidkey != "" {
-			if tidval := typeIdent(ht.Value); tidval != "" {
-				return "map[" + tidkey + "]" + tidval
-			}
-		}
-		return ""
-	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
-		pkgname := sel.X.(*ast.Ident).Name
-		tdot.Imps[pkgname] = pkgname
-		if udevgo.PkgsByImP == nil {
-			if err := udevgo.RefreshPkgs(); err != nil {
-				panic(err)
-			}
-		}
-		if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
-			tdot.Imps[pkgname] = pkgimppath
-		}
-		return pkgname + "." + sel.Sel.Name
-	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
-		return "interface{}"
-	} else if fn, _ := t.(*ast.FuncType); fn != nil {
-		return ""
-	} else if ch, _ := t.(*ast.ChanType); ch != nil {
-		return ""
-	}
-	panic(fmt.Sprintf("%T", t))
 }

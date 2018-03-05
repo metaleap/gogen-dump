@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"text/template"
 
 	"github.com/go-leap/str"
 )
@@ -22,10 +21,7 @@ func genDump() {
 		panic(err)
 	}
 	defer file.Close()
-	tmpl := template.New(filePathDst)
-	if _, err = tmpl.Parse(tmplPkg); err != nil {
-		panic(err)
-	} else if err = tmpl.Execute(file, &tdot); err != nil {
+	if err = genViaTmpl(file); err != nil {
 		panic(err)
 	}
 	os.Stdout.WriteString("generated: " + filePathDst)
