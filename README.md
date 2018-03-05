@@ -27,10 +27,11 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 
 Compromises that make this non-viable for various use-cases but still perfectly suitable for various others:
 
-- generated code imports and uses `unsafe` and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
-- no schema/structural versioning or sanity/length checks
+- caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, there is no 'address registry'
+- caution: generated code imports and uses `unsafe` and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
+- caution: no schema/structural versioning or sanity/length checks
 
-So by and large, use-cases are limited to local cache files of expensive-to-(re)compute structures (but where the absence or corruption of such files at worst only delays but won't break the system), or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be kept in sync (by means of architecture/ops discipline).
+So by and large, use-cases are limited to local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or corruption of such files at worst only delays but won't break the system), or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be kept in sync (by means of architecture/ops discipline).
 
 ## Supports all built-in primitive types plus:
 
