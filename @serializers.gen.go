@@ -10,80 +10,6 @@ import (
 )
 
 
-func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
-	
-	
-	l_FirstName := (len(me.FirstName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:]) ; buf.WriteString(me.FirstName)
-	
-	if me.MiddleNames == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
-		l_MiddleNames := (len((*me.MiddleNames))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_MiddleNames))[:]) ; for i_MiddleNames := 0; i_MiddleNames < int(l_MiddleNames); i_MiddleNames++ {
-		if (*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *(*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if **(*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
-		for ii_i_MiddleNames := 0; ii_i_MiddleNames < 4; ii_i_MiddleNames++ {
-		if (***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
-		l_ii_i_MiddleNames := (len((*(***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames]))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_ii_i_MiddleNames))[:]) ; buf.WriteString((*(***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames]))
-	}
-	}
-	}}}
-	}
-	}
-	
-	if me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
-		l_LastName := (len((**me.LastName))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString((**me.LastName))
-	}}
-	
-	
-	
-	
-	
-	return
-}
-
-func (me *embName) WriteTo(w io.Writer) (int64, error) {
-	if data, err := me.MarshalBinary(); err == nil {
-		var n int
-		n, err = w.Write(data)
-		return int64(n), err
-	} else {
-		return 0, err
-	}
-}
-
-func (me *embName) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
-		data = buf.Bytes()
-	}
-	return
-}
-
-func (me *embName) UnmarshalBinary(data []byte) (err error) {
-	var pos int
-	
-	l_FirstName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; me.FirstName= string(data[pos : pos+l_FirstName]) ; pos += l_FirstName
-	
-	if pos++; data[pos-1] == 0 { me.MiddleNames = nil } else { 
-		l_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_MiddleNames:= make([]***[4]*string, l_MiddleNames) ; for i_MiddleNames := 0; i_MiddleNames < int(l_MiddleNames); i_MiddleNames++ {
-		if pos++; data[pos-1] != 0 { if pos++; data[pos-1] != 0 { if pos++; data[pos-1] != 0 { 
-		v_i_MiddleNames:= [4]*string{} ; for ii_i_MiddleNames := 0; ii_i_MiddleNames < 4; ii_i_MiddleNames++ {
-		if pos++; data[pos-1] != 0 { 
-		l_ii_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_ii_i_MiddleNames:= string(data[pos : pos+l_ii_i_MiddleNames]) ; pos += l_ii_i_MiddleNames ; v_i_MiddleNames[ii_i_MiddleNames]= &v_ii_i_MiddleNames
-	}
-	} ; p0_i_MiddleNames := &v_i_MiddleNames ; p1_i_MiddleNames := &p0_i_MiddleNames ; v_MiddleNames[i_MiddleNames] = &p1_i_MiddleNames
-	}}}
-	} ; me.MiddleNames= &v_MiddleNames
-	}
-	
-	if pos++; data[pos-1] == 0 { me.LastName = nil } else { if pos++; data[pos-1] == 0 { me.LastName = nil } else { 
-		l_LastName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_LastName:= string(data[pos : pos+l_LastName]) ; pos += l_LastName ; p0_LastName := &v_LastName ; me.LastName = &p0_LastName
-	}}
-	
-	
-	
-	
-	
-	return
-}
-
 func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	var data bytes.Buffer
 	
@@ -237,6 +163,80 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	}}}
 	
 	me.R= *((*rune)(unsafe.Pointer(&data[pos]))) ; pos += 4
+	
+	return
+}
+
+func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
+	
+	
+	l_FirstName := (len(me.FirstName)) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:]) ; buf.WriteString(me.FirstName)
+	
+	if me.MiddleNames == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		l_MiddleNames := (len((*me.MiddleNames))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_MiddleNames))[:]) ; for i_MiddleNames := 0; i_MiddleNames < int(l_MiddleNames); i_MiddleNames++ {
+		if (*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *(*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if **(*me.MiddleNames)[i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		for ii_i_MiddleNames := 0; ii_i_MiddleNames < 4; ii_i_MiddleNames++ {
+		if (***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		l_ii_i_MiddleNames := (len((*(***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames]))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_ii_i_MiddleNames))[:]) ; buf.WriteString((*(***(*me.MiddleNames)[i_MiddleNames])[ii_i_MiddleNames]))
+	}
+	}
+	}}}
+	}
+	}
+	
+	if me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *me.LastName == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
+		l_LastName := (len((**me.LastName))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString((**me.LastName))
+	}}
+	
+	
+	
+	
+	
+	return
+}
+
+func (me *embName) WriteTo(w io.Writer) (int64, error) {
+	if data, err := me.MarshalBinary(); err == nil {
+		var n int
+		n, err = w.Write(data)
+		return int64(n), err
+	} else {
+		return 0, err
+	}
+}
+
+func (me *embName) MarshalBinary() (data []byte, err error) {
+	var buf bytes.Buffer
+	if err = me.writeTo(&buf); err == nil {
+		data = buf.Bytes()
+	}
+	return
+}
+
+func (me *embName) UnmarshalBinary(data []byte) (err error) {
+	var pos int
+	
+	l_FirstName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; me.FirstName= string(data[pos : pos+l_FirstName]) ; pos += l_FirstName
+	
+	if pos++; data[pos-1] == 0 { me.MiddleNames = nil } else { 
+		l_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_MiddleNames:= make([]***[4]*string, l_MiddleNames) ; for i_MiddleNames := 0; i_MiddleNames < int(l_MiddleNames); i_MiddleNames++ {
+		if pos++; data[pos-1] != 0 { if pos++; data[pos-1] != 0 { if pos++; data[pos-1] != 0 { 
+		v_i_MiddleNames:= [4]*string{} ; for ii_i_MiddleNames := 0; ii_i_MiddleNames < 4; ii_i_MiddleNames++ {
+		if pos++; data[pos-1] != 0 { 
+		l_ii_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_ii_i_MiddleNames:= string(data[pos : pos+l_ii_i_MiddleNames]) ; pos += l_ii_i_MiddleNames ; v_i_MiddleNames[ii_i_MiddleNames]= &v_ii_i_MiddleNames
+	}
+	} ; p0_i_MiddleNames := &v_i_MiddleNames ; p1_i_MiddleNames := &p0_i_MiddleNames ; v_MiddleNames[i_MiddleNames] = &p1_i_MiddleNames
+	}}}
+	} ; me.MiddleNames= &v_MiddleNames
+	}
+	
+	if pos++; data[pos-1] == 0 { me.LastName = nil } else { if pos++; data[pos-1] == 0 { me.LastName = nil } else { 
+		l_LastName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_LastName:= string(data[pos : pos+l_LastName]) ; pos += l_LastName ; p0_LastName := &v_LastName ; me.LastName = &p0_LastName
+	}}
+	
+	
+	
+	
 	
 	return
 }
