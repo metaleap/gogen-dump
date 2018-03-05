@@ -7,22 +7,31 @@ import (
 type tmplDotFile struct {
 	ProgHint string
 	PName    string
-	Types    []tmplDotType
+	Types    []*tmplDotType
 	Imps     map[string]string
 }
 
 type tmplDotType struct {
 	TName    string
-	Fields   []tmplDotField
+	Fields   []*tmplDotField
 	HasWData bool
+}
+
+func (me *tmplDotType) isFixedSize() bool {
+	for i := range me.Fields {
+		if !me.Fields[i].isFixedSize {
+			return false
+		}
+	}
+	return true
 }
 
 func (me *tmplDotType) isIfaceSlice(name string) bool {
 	if i := strings.Index(name, "["); i > 0 {
 		name = name[:i]
-		for _, f := range me.Fields {
-			if f.FName == name {
-				return f.isIfaceSlice
+		for i = range me.Fields {
+			if me.Fields[i].FName == name {
+				return me.Fields[i].isIfaceSlice
 			}
 		}
 	}
@@ -33,8 +42,11 @@ type tmplDotField struct {
 	FName string
 	TmplW string
 	TmplR string
-	Skip  bool
 
+	typeIdent    string
+	taggedUnion  []string
+	isFixedSize  bool
+	skip         bool
 	isIfaceSlice bool
 }
 

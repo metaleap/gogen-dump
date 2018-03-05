@@ -1,36 +1,38 @@
 # gogen-dump
 
-Generates high-performance binary (ie. non-textual but byte-stream) serialization/deserialization methods for Go `struct´ type-defs.
+Generates low-level/high-performance binary (ie. non-textual but byte-stream) serialization/deserialization methods for Go `struct` type-defs.
 
 ## Usage:
 
+at least:
+
     gogen-dump my/go/pkg/path
 
-### or:
+or better yet
 
     gogen-dump my/go/pkg/path myStruct OtherStruct
 
 generates: `my/go/pkg/path/@serializers.gen.go`.
 
-Package path can be file-system path or Go import path. If it is followed directly by `some-file-name.go`, then that one will be written instead of the default `@serializers.gen.go`.
-
-> Very recommendable to explicitly state only the `struct` type names required, rather than let `gogen-dump` auto-grab-all declared in the package.
+- Package path can be file-system (dir or file) path (rel/abs) or Go import path
+- If it is followed directly by `some-file-name.go`, then that one will be written instead of the default `@serializers.gen.go`.
+- Very recommendable to explicitly state only the `struct` type names required, rather than let `gogen-dump` process any & all declared throughout your package.
 
 ## Satisfies my own following exact spec that I found underserved by the ecosystem at time of writing:
 
-- no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema"
+- no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema" (hence only generates methods, not types)
 - no use of `reflect`, neither at generation time nor at at runtime, so private fields can be (de)serialized
 - unlike `gob` and most other encoders, does not (de)serialize field names (or even field/type IDs), only goes by straight (generation-time) type *structure*
 - varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width
 
-Compromises —that make this non-viable for various use-cases but still perfectly suitable for various others— made for performance reasons:
+Compromises that make this non-viable for various use-cases but still perfectly suitable for various others:
 
 - generated code imports and uses `unsafe` and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
 - no schema/structural versioning or sanity/length checks
 
-So by and large, use-cases are limited to local cache files of expensive-to-(re)compute structures (but where the absence or corruption of such files at worst only slows down but won't break the system), or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be in sync.
+So by and large, use-cases are limited to local cache files of expensive-to-(re)compute structures (but where the absence or corruption of such files at worst only delays but won't break the system), or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be kept in sync (by means of architecture/ops discipline).
 
-### Supports all built-in primitive types plus:
+## Supports all built-in primitive types plus:
 
 - other structs (or pointers/slices/maps/arrays/etc. referring to them) that have `gogen-dump`-generated un/marshaling, too
 - any structs (or pointers/slices/maps/arrays/etc. referring to them) implementing both `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`

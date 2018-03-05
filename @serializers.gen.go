@@ -15,8 +15,6 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	
 	if err = me.embName.writeTo(&data); err != nil { return } ; l_embName := (data.Len()) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:]) ; data.WriteTo(buf)
 	
-	
-	
 	if me.Balance == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
 		for i_Balance := 0; i_Balance < 3; i_Balance++ {
 		if (*me.Balance)[i_Balance] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; if *(*me.Balance)[i_Balance] == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; 
@@ -100,8 +98,6 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	var pos int
 	
 	l_embName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; if err = me.embName.UnmarshalBinary(data[pos : pos+l_embName]); err != nil { return } ; pos += l_embName
-	
-	
 	
 	if pos++; data[pos-1] == 0 { me.Balance = nil } else { 
 		v_Balance:= [3]**int16{} ; for i_Balance := 0; i_Balance < 3; i_Balance++ {
@@ -188,10 +184,6 @@ func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
 		l_LastName := (len((**me.LastName))) ; buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:]) ; buf.WriteString((**me.LastName))
 	}}
 	
-	
-	
-	
-	
 	return
 }
 
@@ -233,10 +225,6 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 	if pos++; data[pos-1] == 0 { me.LastName = nil } else { if pos++; data[pos-1] == 0 { me.LastName = nil } else { 
 		l_LastName := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8 ; v_LastName:= string(data[pos : pos+l_LastName]) ; pos += l_LastName ; p0_LastName := &v_LastName ; me.LastName = &p0_LastName
 	}}
-	
-	
-	
-	
 	
 	return
 }
