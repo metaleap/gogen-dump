@@ -12,6 +12,23 @@ func genDump() {
 	for _, tdt := range tdot.Types {
 		for _, tdf := range tdt.Fields {
 			tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, 0, 0, tdf.taggedUnion)
+
+			if tdf.isLast { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to pos
+				lastp, lastpalt := ustr.Last(tdf.TmplR, "pos++"), ustr.Last(tdf.TmplR, "pos +=")
+				if lastpalt > lastp {
+					lastp = lastpalt
+				}
+				if lastp > 0 {
+					off, offalt := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n")
+					if offalt > 0 && offalt < off {
+						off = offalt
+					}
+					if off < 0 {
+						off = len(tdf.TmplR) - lastp
+					}
+					tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
+				}
+			}
 		}
 	}
 
@@ -43,7 +60,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 		mfr = "mkv_" + nf
 	}
 	var cast string
-	if safeVarInts {
+	if optSafeVarints {
 		cast = "uint64"
 	}
 	switch typeName {
@@ -117,7 +134,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 
 			slen := typeName[1:pclose]
 			if slen == "" || ismap {
-				slen = "int(" + lf + ")"
+				if slen = "(" + lf + ")"; optSafeVarints {
+					slen = "int" + slen
+				}
 				tmplR += genLenR(nf) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
 				tmplW += lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nf) + " ; "
 			} else if numIndir > 0 {
@@ -198,7 +217,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 
 func genSizedR(mfr string, typeName string, byteSize string) string {
 	if byteSize == "int64" || byteSize == "uint64" {
-		if safeVarInts {
+		if optSafeVarints {
 			return mfr + "= " + typeName + "(*((*" + byteSize + ")(unsafe.Pointer(&data[pos])))) ; pos += 8"
 		}
 		byteSize = "8"
@@ -208,7 +227,7 @@ func genSizedR(mfr string, typeName string, byteSize string) string {
 
 func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 	if byteSize == "int64" || byteSize == "uint64" {
-		if safeVarInts {
+		if optSafeVarints {
 			return byteSize + "_" + fieldName + " := " + byteSize + "(" + mfw + ") ; buf.Write(((*[8]byte)(unsafe.Pointer(&" + byteSize + "_" + fieldName + ")))[:])"
 		}
 		byteSize = "8"
@@ -222,7 +241,7 @@ func genSizedW(fieldName string, mfw string, byteSize string) (s string) {
 }
 
 func genLenR(fieldName string) string {
-	if safeVarInts {
+	if optSafeVarints {
 		return "l_" + fieldName + " := int(*((*uint64)(unsafe.Pointer(&data[pos])))) ; pos += 8"
 	}
 	return "l_" + fieldName + " := (*((*int)(unsafe.Pointer(&data[pos])))) ; pos += 8"

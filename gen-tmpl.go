@@ -14,12 +14,11 @@ type tmplDotFile struct {
 }
 
 type tmplDotType struct {
-	TName       string
-	Fields      []*tmplDotField
-	HasWData    bool
-	HasB0Ptr    bool
-	HasB1Ptr    bool
-	isFixedSize bool
+	TName    string
+	Fields   []*tmplDotField
+	HasWData bool
+	HasB0Ptr bool
+	HasB1Ptr bool
 }
 
 func (me *tmplDotType) isIfaceSlice(name string) bool {
@@ -42,8 +41,9 @@ type tmplDotField struct {
 	typeIdent    string
 	taggedUnion  []string
 	skip         bool
+	fixedSize    int
 	isIfaceSlice bool
-	isFixedSize  bool
+	isLast       bool
 }
 
 const tmplPkg = `package {{.PName}}

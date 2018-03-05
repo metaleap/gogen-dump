@@ -7,9 +7,9 @@ type testStruct struct {
 	AccountAge int
 	Any        []interface{} `gogen-dump:"*embName []embName []*embName []*float32"`
 	Foo        [][2]map[rune]***[]*int16
-	Age        ***uint
 	R          rune
 	By         byte
+	Age        ***uint
 }
 
 type embName struct {

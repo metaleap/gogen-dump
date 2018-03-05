@@ -11,18 +11,18 @@ import (
 	"github.com/go-leap/str"
 )
 
-const (
-	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream.
-	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
-	safeVarInts = false
-)
-
 var (
 	genFileName  = "@serializers.gen.go"
 	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]string{}}
 	goPkgDirPath = tdot.ProgHint
 	typeNames    = []string{"testStruct", "embName"}
 	ts           = map[*ast.TypeSpec]*ast.StructType{}
+
+	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream.
+	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
+	optSafeVarints = false // set to true by presence of a command-line arg -safeVarints
+
+	optVarintsInFixedSizeds = true // functionality on-hold for now
 )
 
 func main() {
@@ -32,6 +32,14 @@ func main() {
 				typeNames, genFileName = os.Args[3:], os.Args[2]
 			} else {
 				typeNames = os.Args[2:]
+			}
+
+			// any flags?
+			for i := 0; i < len(typeNames); i++ {
+				switch typeNames[i] {
+				case "-safeVarints":
+					optSafeVarints, typeNames = true, append(typeNames[:i], typeNames[i+1:]...)
+				}
 			}
 		}
 	}
