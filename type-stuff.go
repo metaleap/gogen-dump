@@ -72,7 +72,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	if ident, _ := t.(*ast.Ident); ident != nil {
 		switch ident.Name {
-		case "bool", "uint8", "byte":
+		case "bool", "uint8", "byte", "int8":
 			return ident.Name, 1
 		case "int16", "uint16":
 			return ident.Name, 2
@@ -93,6 +93,11 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 		case "int":
 			if optVarintsInFixedSizeds {
 				return ident.Name, int(unsafe.Sizeof(int(0)))
+			}
+		default:
+			if tsyn := tSynonyms[ident.Name]; tsyn != "" {
+				_, tsynfixsize := typeIdentAndFixedSize(&ast.Ident{Name: tsyn})
+				return ident.Name, tsynfixsize
 			}
 		}
 		return ident.Name, 0

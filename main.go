@@ -15,14 +15,15 @@ var (
 	genFileName  = "@serializers.gen.go"
 	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]string{}}
 	goPkgDirPath = tdot.ProgHint
-	typeNames    = []string{"testStruct", "embName"}
+	typeNames    = []string{"fixed", "testStruct", "embName"}
 	ts           = map[*ast.TypeSpec]*ast.StructType{}
+	tSynonyms    = map[string]string{}
 
 	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream.
 	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
 	optSafeVarints = false // set to true by presence of a command-line arg -safeVarints
 
-	optVarintsInFixedSizeds = false
+	optVarintsInFixedSizeds = false // set to true by presence of command-line arg -varintsInFixedSizeds
 )
 
 func main() {
@@ -35,10 +36,15 @@ func main() {
 			}
 
 			// any flags?
-			for i := 0; i < len(typeNames); i++ {
+			for i, ditch := 0, false; i < len(typeNames); i++ {
 				switch typeNames[i] {
 				case "-safeVarints":
-					optSafeVarints, typeNames = true, append(typeNames[:i], typeNames[i+1:]...)
+					optVarintsInFixedSizeds, ditch = true, true
+				case "-varintsInFixedSizeds":
+					optSafeVarints, ditch = true, true
+				}
+				if ditch {
+					typeNames = append(typeNames[:i], typeNames[i+1:]...)
 				}
 			}
 		}
@@ -75,13 +81,14 @@ func main() {
 							if len(typeNames) == 0 || ustr.In(t.Name.Name, typeNames...) {
 								ts[t] = s
 							}
+						} else if tident, _ := t.Type.(*ast.Ident); tident != nil {
+							tSynonyms[t.Name.Name] = tident.Name
 						}
 					}
 				}
 			}
 		}
 	}
-
 	if collectTypes(); len(tdot.Types) == 0 {
 		println("nothing to generate")
 	} else {

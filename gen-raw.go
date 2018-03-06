@@ -21,14 +21,16 @@ func genDump() {
 					lastp = lastpalt
 				}
 				if lastp > 0 {
-					off, offalt := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n")
+					off, offalt, offnope := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n"), ustr.Pos(tdf.TmplR[lastp:], "}")
 					if offalt > 0 && offalt < off {
 						off = offalt
 					}
 					if off < 0 {
 						off = len(tdf.TmplR) - lastp
 					}
-					tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
+					if offnope < 0 || offnope > off {
+						tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
+					}
 				}
 			}
 		}
@@ -72,6 +74,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 	case "uint8", "byte":
 		tmplW = "buf.WriteByte(" + mfw + ")"
 		tmplR = mfr + "= data[pos] ; pos++"
+	case "int8":
+		tmplW = genSizedW(nfr, mfw, "1")
+		tmplR = genSizedR(mfr, typeName, "1")
 	case "string":
 		tmplW = lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; buf.WriteString(" + mfw + ")"
 		tmplR = genLenR(nfr) + " ; " + mfr + "= string(data[pos : pos+" + lf + "]) ; pos += " + lf
@@ -224,6 +229,11 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 			tmplR += genLenR(nfr) + " ; if err = " + ustr.TrimR(mfr, ":") + ".UnmarshalBinary(data[pos : pos+" + lf + "]); err != nil { return } ; pos += " + lf
 			tmplW += "d_" + nfr + ", e_" + nfr + " := " + mfw + ".MarshalBinary() ; if err = e_" + nfr + "; err != nil { return } ; " + lf + " := " + cast + "(len(d_" + nfr + ")) ; " + genLenW(nfr) + " ; buf.Write(d_" + nfr + ")"
 
+			if tsyn := tSynonyms[typeName]; tsyn != "" {
+				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tdt, tsyn, numIndir, iterDepth, taggedUnion)
+				tmplR = ustr.Replace(tmplR, "(*"+tsyn+")(unsafe.Pointer(", "(*"+typeName+")(unsafe.Pointer(")
+				return
+			}
 			for tspec := range ts {
 				if tspec.Name.Name == typeName {
 					tdt.HasWData = true
