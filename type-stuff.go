@@ -15,47 +15,58 @@ import (
 func collectTypes() {
 	tdot.Types = make([]*tmplDotType, 0, len(ts))
 	for t, s := range ts {
-		tdt := &tmplDotType{TName: t.Name.Name, Fields: make([]*tmplDotField, 0, len(s.Fields.List))}
-		for _, fld := range s.Fields.List {
-			tdf := &tmplDotField{}
-			if l := len(fld.Names); l == 0 {
-				if ident, _ := fld.Type.(*ast.Ident); ident != nil {
-					tdf.FName = ident.Name
-				} else {
-					panic(fmt.Sprintf("%T", fld.Type))
-				}
-			} else if l == 1 {
-				tdf.FName = fld.Names[0].Name
-			} else {
-				panic(l)
-			}
-			if fld.Tag != nil {
-				if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
-					tagval := fld.Tag.Value[pos+12:]
-					tagval = tagval[:ustr.Pos(tagval, "\"")]
-					if tagval == "-" {
-						tdf.skip = true
-					} else {
-						tdf.taggedUnion = ustr.Split(tagval, " ")
-					}
-				}
-			}
-			if !tdf.skip {
-				if tdf.typeIdent, tdf.fixedSize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
-					tdf.skip = true
-				} else {
-					tdf.isIfaceSlice = (tdf.typeIdent == "[]interface{}")
-				}
-			}
-			if !tdf.skip {
-				tdt.Fields = append(tdt.Fields, tdf)
-			}
-		}
+		tdt := &tmplDotType{TName: t.Name.Name, Fields: collectFields(s)}
 		if l := len(tdt.Fields); l > 0 {
 			tdt.Fields[l-1].isLast = true
 			tdot.Types = append(tdot.Types, tdt)
 		}
 	}
+}
+
+func collectFields(st *ast.StructType) (fields []*tmplDotField) {
+	fields = make([]*tmplDotField, 0, len(st.Fields.List))
+	for _, fld := range st.Fields.List {
+		tdf := &tmplDotField{}
+		if l := len(fld.Names); l == 0 {
+			if ident, _ := fld.Type.(*ast.Ident); ident != nil {
+				tdf.FName = ident.Name
+			} else {
+				panic(fmt.Sprintf("%T", fld.Type))
+			}
+		} else if l == 1 {
+			tdf.FName = fld.Names[0].Name
+		} else {
+			panic(l)
+		}
+		if fld.Tag != nil {
+			if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
+				tagval := fld.Tag.Value[pos+12:]
+				tagval = tagval[:ustr.Pos(tagval, "\"")]
+				if tagval == "-" {
+					tdf.skip = true
+				} else {
+					tdf.taggedUnion = ustr.Split(tagval, " ")
+				}
+			}
+		}
+		if !tdf.skip {
+			if substruc, _ := fld.Type.(*ast.StructType); substruc != nil {
+				tdf.skip = true
+				for _, subtdf := range collectFields(substruc) {
+					subtdf.FName = tdf.FName + "." + subtdf.FName
+					fields = append(fields, subtdf)
+				}
+			} else if tdf.typeIdent, tdf.fixedSize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
+				tdf.skip = true
+			} else {
+				tdf.isIfaceSlice = (tdf.typeIdent == "[]interface{}")
+			}
+		}
+		if !tdf.skip {
+			fields = append(fields, tdf)
+		}
+	}
+	return
 }
 
 // we go by type spec strings that we then later on 'parse' again, because they can also occur in struct-field-tags for tagged-unions

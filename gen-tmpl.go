@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"go/format"
 	"io"
 	"strings"
 	"text/template"
@@ -99,7 +101,15 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 func genViaTmpl(file io.Writer) (err error) {
 	tmpl := template.New("gen-tmpl.go")
 	if _, err = tmpl.Parse(tmplPkg); err == nil {
-		err = tmpl.Execute(file, &tdot)
+		var buf bytes.Buffer
+		if err = tmpl.Execute(&buf, &tdot); err == nil {
+			src := buf.Bytes()
+			if srcfmt, errfmt := format.Source(src); errfmt == nil {
+				_, err = file.Write(srcfmt)
+			} else {
+				_, err = file.Write(src)
+			}
+		}
 	}
 	return
 }
