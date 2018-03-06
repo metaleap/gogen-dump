@@ -55,7 +55,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 					subtdf.FName = tdf.FName + "." + subtdf.FName
 					fields = append(fields, subtdf)
 				}
-			} else if tdf.typeIdent, tdf.fixedSize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
+			} else if tdf.typeIdent, tdf.fixedsize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
 				tdf.skip = true
 			} else {
 				tdf.isIfaceSlice = (tdf.typeIdent == "[]interface{}")
@@ -72,59 +72,48 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	if ident, _ := t.(*ast.Ident); ident != nil {
 		switch ident.Name {
-		case "bool", "uint8", "byte", "int8":
-			return ident.Name, 1
-		case "int16", "uint16":
-			return ident.Name, 2
-		case "rune", "int32", "float32", "uint32":
-			return ident.Name, 4
-		case "complex64", "float64", "uint64", "int64":
-			return ident.Name, 8
-		case "complex128":
-			return ident.Name, 16
-		case "uint":
-			if optVarintsInFixedSizeds {
-				return ident.Name, int(unsafe.Sizeof(uint(0)))
-			}
-		case "uintptr":
-			if optVarintsInFixedSizeds {
-				return ident.Name, int(unsafe.Sizeof(uintptr(0)))
-			}
-		case "int":
-			if optVarintsInFixedSizeds {
-				return ident.Name, int(unsafe.Sizeof(int(0)))
-			}
+		case "bool", "uint8", "byte", "int8", "int16", "uint16", "rune", "int32", "float32", "uint32", "complex64", "float64", "uint64", "int64", "complex128", "uint", "int", "uintptr":
+			return ident.Name, typePrimFixedSize(ident.Name)
 		default:
 			if tsyn := tSynonyms[ident.Name]; tsyn != "" {
 				_, tsynfixsize := typeIdentAndFixedSize(&ast.Ident{Name: tsyn})
 				return ident.Name, tsynfixsize
 			}
+			for t := range ts {
+				if t.Name.Name == ident.Name {
+					return ident.Name, 0
+				}
+			}
 		}
-		return ident.Name, 0
+		return ident.Name, -1
 
 	} else if star, _ := t.(*ast.StarExpr); star != nil {
 		if tident, _ := typeIdentAndFixedSize(star.X); tident != "" {
-			return "*" + tident, 0
+			return "*" + tident, -1
 		}
-		return "", 0
+		return "", -1
 
 	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
 		if tident, fixedsize := typeIdentAndFixedSize(arr.Elt); tident != "" {
 			if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
-				arrlen, _ := strconv.Atoi(lit.Value)
-				return "[" + lit.Value + "]" + tident, fixedsize * arrlen
+				if arrlen, _ := strconv.Atoi(lit.Value); arrlen > 0 {
+					fixedsize *= arrlen
+				} else {
+					return "", -1
+				}
+				return "[" + lit.Value + "]" + tident, fixedsize
 			}
-			return "[]" + tident, 0
+			return "[]" + tident, -1
 		}
-		return "", 0
+		return "", -1
 
 	} else if ht, _ := t.(*ast.MapType); ht != nil {
 		if tidkey, _ := typeIdentAndFixedSize(ht.Key); tidkey != "" {
 			if tidval, _ := typeIdentAndFixedSize(ht.Value); tidval != "" {
-				return "map[" + tidkey + "]" + tidval, 0
+				return "map[" + tidkey + "]" + tidval, -1
 			}
 		}
-		return "", 0
+		return "", -1
 
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		pkgname := sel.X.(*ast.Ident).Name
@@ -137,22 +126,53 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 		if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
 			tdot.Imps[pkgname] = pkgimppath
 		}
-		return pkgname + "." + sel.Sel.Name, 0
+		return pkgname + "." + sel.Sel.Name, -1
 
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
-		return "interface{}", 0
+		return "interface{}", -1
 
 	} else if fn, _ := t.(*ast.FuncType); fn != nil {
-		return "", 0
+		return "", -1
 
 	} else if struc, _ := t.(*ast.StructType); struc != nil {
 		println("skipping a field: indirect (via ptr, slice, etc) in-struct inline sub-structs not supported (only direct ones are). mark it `gogendump:\"-\"` to not see this message.")
-		return "", 0
+		return "", -1
 
 	} else if ch, _ := t.(*ast.ChanType); ch != nil {
-		return "", 0
+		return "", -1
 	}
 	panic(t)
+}
+
+func typePrimFixedSize(typeIdent string) int {
+	switch typeIdent {
+	case "bool", "uint8", "byte", "int8":
+		return 1
+	case "int16", "uint16":
+		return 2
+	case "rune", "int32", "float32", "uint32":
+		return 4
+	case "complex64", "float64", "uint64", "int64":
+		return 8
+	case "complex128":
+		return 16
+	case "uint":
+		if optVarintsInFixedSizeds {
+			return int(unsafe.Sizeof(uint(0)))
+		}
+	case "uintptr":
+		if optVarintsInFixedSizeds {
+			return int(unsafe.Sizeof(uintptr(0)))
+		}
+	case "int":
+		if optVarintsInFixedSizeds {
+			return int(unsafe.Sizeof(int(0)))
+		}
+	}
+	if tsyn := tSynonyms[typeIdent]; tsyn != "" {
+		return typePrimFixedSize(tsyn)
+	}
+	return 0
 }
 
 // // nicked from teh_cmc/gools/zerocopy:

@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"go/format"
 	"io"
+	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/go-leap/str"
 )
 
 type tmplDotFile struct {
@@ -21,6 +24,8 @@ type tmplDotType struct {
 	HasWData bool
 	HasB0Ptr bool
 	HasB1Ptr bool
+
+	fixedsize int
 }
 
 func (me *tmplDotType) isIfaceSlice(name string) bool {
@@ -35,6 +40,31 @@ func (me *tmplDotType) isIfaceSlice(name string) bool {
 	return false
 }
 
+func (me *tmplDotType) fixedSize() int {
+	if me.fixedsize == 0 {
+		if tsyn := tSynonyms[me.TName]; tsyn != "" {
+			for _, tdt := range tdot.Types {
+				if tdt.TName == tsyn {
+					me.fixedsize = tdt.fixedSize()
+					return me.fixedsize
+				}
+			}
+		}
+		for _, fld := range me.Fields {
+			if fs := fld.fixedSize(); fs <= 0 {
+				me.fixedsize = -1
+				break
+			} else {
+				me.fixedsize += fs
+			}
+		}
+		if me.fixedsize == 0 {
+			me.fixedsize = -1
+		}
+	}
+	return me.fixedsize
+}
+
 type tmplDotField struct {
 	FName string
 	TmplW string
@@ -43,9 +73,43 @@ type tmplDotField struct {
 	typeIdent    string
 	taggedUnion  []string
 	skip         bool
-	fixedSize    int
+	fixedsize    int
 	isIfaceSlice bool
 	isLast       bool
+}
+
+func (me *tmplDotField) fixedSize() int {
+	if me.fixedsize == 0 {
+		me.fixedsize = -1
+		mult, tn := 1, me.typeIdent
+		for tn[0] == '[' {
+			if i := ustr.Pos(tn, "]"); i <= 1 {
+				return me.fixedsize
+			} else if nulen, _ := strconv.Atoi(tn[1:i]); nulen <= 0 {
+				return me.fixedsize
+			} else if mult, tn = mult*nulen, tn[i+1:]; tn == "" {
+				return me.fixedsize
+			}
+		}
+
+		tsyn := tSynonyms[tn]
+		if primsize := typePrimFixedSize(tn); primsize > 0 {
+			me.fixedsize = mult * primsize
+		} else if primsize = typePrimFixedSize(tsyn); primsize > 0 {
+			me.fixedsize = mult * primsize
+		} else {
+			for _, tdt := range tdot.Types {
+				if tdt.TName == tsyn {
+					me.fixedsize = mult * tdt.fixedSize()
+					break
+				} else if tdt.TName == tn {
+					me.fixedsize = mult * tdt.fixedSize()
+					break
+				}
+			}
+		}
+	}
+	return me.fixedsize
 }
 
 const tmplPkg = `package {{.PName}}

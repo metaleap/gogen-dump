@@ -39,9 +39,9 @@ func main() {
 			for i, ditch := 0, false; i < len(typeNames); i++ {
 				switch typeNames[i] {
 				case "-safeVarints":
-					optVarintsInFixedSizeds, ditch = true, true
-				case "-varintsInFixedSizeds":
 					optSafeVarints, ditch = true, true
+				case "-varintsInFixedSizeds":
+					optVarintsInFixedSizeds, ditch = true, true
 				}
 				if ditch {
 					typeNames = append(typeNames[:i], typeNames[i+1:]...)
