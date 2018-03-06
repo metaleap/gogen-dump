@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
 	"strconv"
@@ -31,7 +30,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 			if ident, _ := fld.Type.(*ast.Ident); ident != nil {
 				tdf.FName = ident.Name
 			} else {
-				panic(fmt.Sprintf("%T", fld.Type))
+				panic(fld.Type)
 			}
 		} else if l == 1 {
 			tdf.FName = fld.Names[0].Name
@@ -141,10 +140,14 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	} else if fn, _ := t.(*ast.FuncType); fn != nil {
 		return "", 0
 
+	} else if struc, _ := t.(*ast.StructType); struc != nil {
+		println("skipping a field: indirect (via ptr, slice, etc) in-struct inline sub-structs not supported (only direct ones are). mark it `gogendump:\"-\"` to not see this message.")
+		return "", 0
+
 	} else if ch, _ := t.(*ast.ChanType); ch != nil {
 		return "", 0
 	}
-	panic(fmt.Sprintf("%T", t))
+	panic(t)
 }
 
 // // nicked from teh_cmc/gools/zerocopy:

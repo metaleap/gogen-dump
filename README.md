@@ -34,15 +34,16 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 
 So by and large, use-cases are limited to local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or corruption of such files at worst only delays but won't break the system), or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be kept in sync (by means of architecture/ops discipline).
 
-## Supports all built-in primitive types plus:
+## Supports all built-in primitive-type fields plus:
 
-- other structs (or pointers/slices/maps/arrays/etc. referring to them) that have `gogen-dump`-generated un/marshaling, too
-- any structs (or pointers/slices/maps/arrays/etc. referring to them) implementing both `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`
+- fields to other structs (or pointers/slices/maps/arrays/etc. referring to them) that have `gogen-dump`-generated (de)serialization, too
+- fields to any structs (or pointers/slices/maps/arrays/etc. referring to them) implementing *both* `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`
 - `interface{}` (or `[]interface{}`) fields denoted as unions/sums via a *Go struct field tag* such as
 
         foo interface{} `gogen-dump:"bool []byte somePkg.otherType *orAnotherType"`
 
     (only concrete types should be named in there, no further interfaces, maximum of 255 entries)
-- all of the above can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
+- fields to direct (but not indirectly referenced) inline in-struct 'anonymous' sub-structs to arbitrary nesting depths
+- all of the above (except inline in-struct 'anonymous' sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
   - some truly unrealistic whacky combinations will generate broken/non-compiling code but these are really hard to find and typically —AFAICT so far— always something you'd never want in a proper code-base anyway (happy to be proven wrong!)
   - also multiple-indirection pointers (pointer-to-pointer or more levels) will be 'all-or-nothing' after a roundtrip, ie. if a later or the final pointer was `nil` at serialization time, the very foremost pointer will be `nil` after deserialization, in other words no preservation of occurrences of edge-cases like a-non-nil-pointer-to-(a-non-nil-pointer-to-.....)a-nil-pointer — another scenario that's unlikely to ever come up (as an irreconcilable issue) in any sane+clean real-world designs.

@@ -12,15 +12,15 @@ type testStruct struct {
 		Foo [][2]map[rune]***[]*int16
 	}
 	DingDong struct {
-		R  rune
-		By []byte
+		R         rune
+		FixedSize [9][7]float64
 	}
 	Age ***uint
 }
 
 type embName struct {
 	FirstName   string
-	MiddleNames *[]***[4]*string
+	MiddleNames *[]***[5]*string
 	LastName    **string
 	Fn          func()
 	Ch          chan bool

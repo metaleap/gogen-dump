@@ -1,6 +1,8 @@
 package main
 
 import (
+	"go/ast"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -132,15 +134,34 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.Pos(typeName[1:], "]")+1; pclose > 0 && (typeName[0] == '[' || ismap) {
 			// ARRAY / SLICE / MAP
 
-			slen := typeName[1:pclose]
+			arrfixedsize, slen := 0, typeName[1:pclose]
 			if slen == "" || ismap {
 				if slen = "(" + lf + ")"; optSafeVarints {
 					slen = "int" + slen
 				}
 				tmplR += genLenR(nfr) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
 				tmplW += lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; "
-			} else if numIndir > 0 {
-				tmplR += mfr + "= " + typeName + "{} ; "
+			} else {
+				if numIndir > 0 {
+					tmplR += mfr + "= " + typeName + "{} ; "
+				}
+
+				arr := &ast.ArrayType{Len: &ast.BasicLit{Kind: token.INT, Value: slen}}
+				for a, tn := arr, typeName[pclose+1:]; (arr != nil) && a.Elt == nil && len(tn) > 0; {
+					if tn[0] != '[' {
+						a.Elt = &ast.Ident{Name: tn}
+					} else if i := ustr.Pos(tn, "]"); i <= 1 {
+						arr = nil
+					} else if nulen, _ := strconv.Atoi(tn[1:i]); nulen == 0 {
+						arr = nil
+					} else if nuarr := (&ast.ArrayType{Len: &ast.BasicLit{Kind: token.INT, Value: tn[1:i]}}); true {
+						a.Elt = nuarr
+						a, tn = nuarr, tn[i+1:]
+					}
+				}
+				if arr != nil {
+					_, arrfixedsize = typeIdentAndFixedSize(arr)
+				}
 			}
 			idx := ustr.Times("i", iterDepth+1) + "_" + nfr
 
@@ -163,6 +184,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdt *tmplDo
 
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
+			} else if afs := strconv.Itoa(arrfixedsize); arrfixedsize > 0 {
+				tmplW = genSizedW(nfr, mfw+"[0]", afs)
+				tmplR = genSizedR(mfr, typeName, afs)
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"

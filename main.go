@@ -22,7 +22,7 @@ var (
 	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
 	optSafeVarints = false // set to true by presence of a command-line arg -safeVarints
 
-	optVarintsInFixedSizeds = true // functionality on-hold for now
+	optVarintsInFixedSizeds = false
 )
 
 func main() {
