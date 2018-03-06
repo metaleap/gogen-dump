@@ -8,6 +8,97 @@ import (
 	"unsafe"
 )
 
+func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
+
+	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.eight1))))[:])
+
+	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.eight2[0]))))[:])
+
+	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.eight3[0]))))[:])
+
+	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.eight4[0]))))[:])
+
+	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.four1[0]))))[:])
+
+	buf.Write(((*[20]byte)(unsafe.Pointer(&(me.four2[0]))))[:])
+
+	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.four3[0]))))[:])
+
+	buf.Write(((*[28]byte)(unsafe.Pointer(&(me.four4[0]))))[:])
+
+	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.one1[0]))))[:])
+
+	buf.Write(((*[9]byte)(unsafe.Pointer(&(me.one2[0]))))[:])
+
+	buf.Write(((*[10]byte)(unsafe.Pointer(&(me.one3[0]))))[:])
+
+	buf.Write(((*[176]byte)(unsafe.Pointer(&(me.sixt1[0]))))[:])
+
+	buf.Write(((*[192]byte)(unsafe.Pointer(&(me.sixt2[0]))))[:])
+
+	return
+}
+
+func (me *fixed) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+	if err := me.writeTo(&buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
+
+func (me *fixed) MarshalBinary() (data []byte, err error) {
+	var buf bytes.Buffer
+	if err = me.writeTo(&buf); err == nil {
+		data = buf.Bytes()
+	}
+	return
+}
+
+func (me *fixed) UnmarshalBinary(data []byte) (err error) {
+	var pos int
+
+	me.eight1 = *((*float64)(unsafe.Pointer(&data[pos])))
+	pos += 8
+
+	me.eight2 = *((*[1]uint64)(unsafe.Pointer(&data[pos])))
+	pos += 8
+
+	me.eight3 = *((*[2]int64)(unsafe.Pointer(&data[pos])))
+	pos += 16
+
+	me.eight4 = *((*[3]complex64)(unsafe.Pointer(&data[pos])))
+	pos += 24
+
+	me.four1 = *((*[4]float32)(unsafe.Pointer(&data[pos])))
+	pos += 16
+
+	me.four2 = *((*[5]int32)(unsafe.Pointer(&data[pos])))
+	pos += 20
+
+	me.four3 = *((*[6]uint32)(unsafe.Pointer(&data[pos])))
+	pos += 24
+
+	me.four4 = *((*[7]rune)(unsafe.Pointer(&data[pos])))
+	pos += 28
+
+	me.one1 = *((*[8]uint8)(unsafe.Pointer(&data[pos])))
+	pos += 8
+
+	me.one2 = *((*[9]int8)(unsafe.Pointer(&data[pos])))
+	pos += 9
+
+	me.one3 = *((*[10]byte)(unsafe.Pointer(&data[pos])))
+	pos += 10
+
+	me.sixt1 = *((*[11]complex128)(unsafe.Pointer(&data[pos])))
+	pos += 176
+
+	me.sixt2 = *((*[12]sixteen)(unsafe.Pointer(&data[pos]))) /*pos += 192*/
+
+	return
+}
+
 func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	var data bytes.Buffer
 
@@ -38,6 +129,17 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	}
 
 	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.Hm.Hm.AccountAge))))[:])
+
+	l_HmꓸHmꓸLookie := (len(me.Hm.Hm.Lookie))
+	buf.Write((*[8]byte)(unsafe.Pointer(&l_HmꓸHmꓸLookie))[:])
+	for i_HmꓸHmꓸLookie := 0; i_HmꓸHmꓸLookie < (l_HmꓸHmꓸLookie); i_HmꓸHmꓸLookie++ {
+		if me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie] == nil {
+			buf.WriteByte(0)
+		} else {
+			buf.WriteByte(1)
+			buf.Write((*[539]byte)(unsafe.Pointer(me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie]))[:])
+		}
+	}
 
 	l_HmꓸHmꓸAny := (len(me.Hm.Hm.Any))
 	buf.Write((*[8]byte)(unsafe.Pointer(&l_HmꓸHmꓸAny))[:])
@@ -208,6 +310,17 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 
 	me.Hm.Hm.AccountAge = *((*int)(unsafe.Pointer(&data[pos])))
 	pos += 8
+
+	l_HmꓸHmꓸLookie := (*((*int)(unsafe.Pointer(&data[pos]))))
+	pos += 8
+	me.Hm.Hm.Lookie = make([]*fixed, l_HmꓸHmꓸLookie)
+	for i_HmꓸHmꓸLookie := 0; i_HmꓸHmꓸLookie < (l_HmꓸHmꓸLookie); i_HmꓸHmꓸLookie++ {
+		if pos++; data[pos-1] != 0 {
+			v_i_HmꓸHmꓸLookie := *((*fixed)(unsafe.Pointer(&data[pos])))
+			pos += 539
+			me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie] = &v_i_HmꓸHmꓸLookie
+		}
+	}
 
 	l_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
 	pos += 8
@@ -459,97 +572,6 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 			me.LastName = &p0_LastName
 		}
 	}
-
-	return
-}
-
-func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
-
-	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.eight1))))[:])
-
-	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.eight2[0]))))[:])
-
-	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.eight3[0]))))[:])
-
-	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.eight4[0]))))[:])
-
-	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.four1[0]))))[:])
-
-	buf.Write(((*[20]byte)(unsafe.Pointer(&(me.four2[0]))))[:])
-
-	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.four3[0]))))[:])
-
-	buf.Write(((*[28]byte)(unsafe.Pointer(&(me.four4[0]))))[:])
-
-	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.one1[0]))))[:])
-
-	buf.Write(((*[9]byte)(unsafe.Pointer(&(me.one2[0]))))[:])
-
-	buf.Write(((*[10]byte)(unsafe.Pointer(&(me.one3[0]))))[:])
-
-	buf.Write(((*[176]byte)(unsafe.Pointer(&(me.sixt1[0]))))[:])
-
-	buf.Write(((*[192]byte)(unsafe.Pointer(&(me.sixt2[0]))))[:])
-
-	return
-}
-
-func (me *fixed) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
-func (me *fixed) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
-		data = buf.Bytes()
-	}
-	return
-}
-
-func (me *fixed) UnmarshalBinary(data []byte) (err error) {
-	var pos int
-
-	me.eight1 = *((*float64)(unsafe.Pointer(&data[pos])))
-	pos += 8
-
-	me.eight2 = *((*[1]uint64)(unsafe.Pointer(&data[pos])))
-	pos += 8
-
-	me.eight3 = *((*[2]int64)(unsafe.Pointer(&data[pos])))
-	pos += 16
-
-	me.eight4 = *((*[3]complex64)(unsafe.Pointer(&data[pos])))
-	pos += 24
-
-	me.four1 = *((*[4]float32)(unsafe.Pointer(&data[pos])))
-	pos += 16
-
-	me.four2 = *((*[5]int32)(unsafe.Pointer(&data[pos])))
-	pos += 20
-
-	me.four3 = *((*[6]uint32)(unsafe.Pointer(&data[pos])))
-	pos += 24
-
-	me.four4 = *((*[7]rune)(unsafe.Pointer(&data[pos])))
-	pos += 28
-
-	me.one1 = *((*[8]uint8)(unsafe.Pointer(&data[pos])))
-	pos += 8
-
-	me.one2 = *((*[9]int8)(unsafe.Pointer(&data[pos])))
-	pos += 9
-
-	me.one3 = *((*[10]byte)(unsafe.Pointer(&data[pos])))
-	pos += 10
-
-	me.sixt1 = *((*[11]complex128)(unsafe.Pointer(&data[pos])))
-	pos += 176
-
-	me.sixt2 = *((*[12]sixteen)(unsafe.Pointer(&data[pos]))) /*pos += 192*/
 
 	return
 }

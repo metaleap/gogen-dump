@@ -12,12 +12,12 @@ import (
 )
 
 func collectTypes() {
-	tdot.Types = make([]*tmplDotType, 0, len(ts))
+	tdot.Structs = make([]*tmplDotStructTypeDef, 0, len(ts))
 	for t, s := range ts {
-		tdt := &tmplDotType{TName: t.Name.Name, Fields: collectFields(s)}
-		if l := len(tdt.Fields); l > 0 {
-			tdt.Fields[l-1].isLast = true
-			tdot.Types = append(tdot.Types, tdt)
+		tdstd := &tmplDotStructTypeDef{TName: t.Name.Name, Fields: collectFields(s)}
+		if l := len(tdstd.Fields); l > 0 {
+			tdstd.Fields[l-1].isLast = true
+			tdot.Structs = append(tdot.Structs, tdstd)
 		}
 	}
 }
@@ -71,21 +71,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 // we go by type spec strings that we then later on 'parse' again, because they can also occur in struct-field-tags for tagged-unions
 func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	if ident, _ := t.(*ast.Ident); ident != nil {
-		switch ident.Name {
-		case "bool", "uint8", "byte", "int8", "int16", "uint16", "rune", "int32", "float32", "uint32", "complex64", "float64", "uint64", "int64", "complex128", "uint", "int", "uintptr":
-			return ident.Name, typePrimFixedSize(ident.Name)
-		default:
-			if tsyn := tSynonyms[ident.Name]; tsyn != "" {
-				_, tsynfixsize := typeIdentAndFixedSize(&ast.Ident{Name: tsyn})
-				return ident.Name, tsynfixsize
-			}
-			for t := range ts {
-				if t.Name.Name == ident.Name {
-					return ident.Name, 0
-				}
-			}
-		}
-		return ident.Name, -1
+		return ident.Name, fixedSizeForTypeSpec(ident.Name)
 
 	} else if star, _ := t.(*ast.StarExpr); star != nil {
 		if tident, _ := typeIdentAndFixedSize(star.X); tident != "" {
@@ -96,7 +82,7 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	} else if arr, _ := t.(*ast.ArrayType); arr != nil {
 		if tident, fixedsize := typeIdentAndFixedSize(arr.Elt); tident != "" {
 			if lit, _ := arr.Len.(*ast.BasicLit); lit != nil && lit.Kind == token.INT {
-				if arrlen, _ := strconv.Atoi(lit.Value); arrlen > 0 {
+				if arrlen, _ := strconv.Atoi(lit.Value); arrlen >= 0 {
 					fixedsize *= arrlen
 				} else {
 					return "", -1
@@ -144,33 +130,60 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	panic(t)
 }
 
-func typePrimFixedSize(typeIdent string) int {
-	switch typeIdent {
-	case "bool", "uint8", "byte", "int8":
-		return 1
-	case "int16", "uint16":
-		return 2
-	case "rune", "int32", "float32", "uint32":
-		return 4
-	case "complex64", "float64", "uint64", "int64":
-		return 8
-	case "complex128":
-		return 16
-	case "uint":
-		if optVarintsInFixedSizeds {
-			return int(unsafe.Sizeof(uint(0)))
-		}
-	case "uintptr":
-		if optVarintsInFixedSizeds {
-			return int(unsafe.Sizeof(uintptr(0)))
-		}
-	case "int":
-		if optVarintsInFixedSizeds {
-			return int(unsafe.Sizeof(int(0)))
+func fixedSizeArrMult(arrTypeIdent string) (mult int, elemTypeIdent string) {
+	mult, elemTypeIdent = 1, arrTypeIdent
+	for elemTypeIdent[0] == '[' {
+		if i := ustr.Pos(elemTypeIdent, "]"); i <= 1 {
+			return 1, ""
+		} else if nulen, _ := strconv.Atoi(elemTypeIdent[1:i]); nulen <= 0 {
+			return 1, ""
+		} else if mult, elemTypeIdent = mult*nulen, elemTypeIdent[i+1:]; elemTypeIdent == "" {
+			return 1, ""
 		}
 	}
-	if tsyn := tSynonyms[typeIdent]; tsyn != "" {
-		return typePrimFixedSize(tsyn)
+	return
+}
+
+func fixedSizeForTypeSpec(typeIdent string) int {
+	mult, typeident := fixedSizeArrMult(typeIdent)
+	switch typeident {
+	case "bool", "uint8", "byte", "int8":
+		return mult * 1
+	case "int16", "uint16":
+		return mult * 2
+	case "rune", "int32", "float32", "uint32":
+		return mult * 4
+	case "complex64", "float64", "uint64", "int64":
+		return mult * 8
+	case "complex128":
+		return mult * 16
+	case "uint":
+		if optVarintsInFixedSizeds {
+			return mult * int(unsafe.Sizeof(uint(0)))
+		}
+		return -1
+	case "uintptr":
+		if optVarintsInFixedSizeds {
+			return mult * int(unsafe.Sizeof(uintptr(0)))
+		}
+		return -1
+	case "int":
+		if optVarintsInFixedSizeds {
+			return mult * int(unsafe.Sizeof(int(0)))
+		}
+		return -1
+	}
+	if tsyn := tSynonyms[typeident]; tsyn != "" {
+		return mult * fixedSizeForTypeSpec(tsyn)
+	} else if typeident[0] == '*' || ustr.Pref(typeident, "map[") || ustr.Pref(typeident, "[]") {
+		return -1
+	}
+	if tdot.allTypesCollected {
+		for _, tdstd := range tdot.Structs {
+			if tdstd.TName == typeident {
+				return tdstd.fixedSize()
+			}
+		}
 	}
 	return 0
 }

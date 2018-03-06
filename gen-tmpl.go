@@ -4,21 +4,20 @@ import (
 	"bytes"
 	"go/format"
 	"io"
-	"strconv"
 	"strings"
 	"text/template"
-
-	"github.com/go-leap/str"
 )
 
 type tmplDotFile struct {
 	ProgHint string
 	PName    string
-	Types    []*tmplDotType
+	Structs  []*tmplDotStructTypeDef
 	Imps     map[string]string
+
+	allTypesCollected bool
 }
 
-type tmplDotType struct {
+type tmplDotStructTypeDef struct {
 	TName    string
 	Fields   []*tmplDotField
 	HasWData bool
@@ -28,7 +27,7 @@ type tmplDotType struct {
 	fixedsize int
 }
 
-func (me *tmplDotType) isIfaceSlice(name string) bool {
+func (me *tmplDotStructTypeDef) isIfaceSlice(name string) bool {
 	if i := strings.Index(name, "["); i > 0 {
 		name = name[:i]
 		for i = range me.Fields {
@@ -40,20 +39,14 @@ func (me *tmplDotType) isIfaceSlice(name string) bool {
 	return false
 }
 
-func (me *tmplDotType) fixedSize() int {
-	if me.fixedsize == 0 {
-		if tsyn := tSynonyms[me.TName]; tsyn != "" {
-			for _, tdt := range tdot.Types {
-				if tdt.TName == tsyn {
-					me.fixedsize = tdt.fixedSize()
-					return me.fixedsize
-				}
-			}
-		}
+func (me *tmplDotStructTypeDef) fixedSize() int {
+	if me.fixedsize == 0 && tdot.allTypesCollected {
 		for _, fld := range me.Fields {
-			if fs := fld.fixedSize(); fs <= 0 {
+			if fs := fld.fixedSize(); fs < 0 {
 				me.fixedsize = -1
 				break
+			} else if fs == 0 {
+				panic("should never occur: " + me.TName + "." + fld.FName)
 			} else {
 				me.fixedsize += fs
 			}
@@ -79,31 +72,15 @@ type tmplDotField struct {
 }
 
 func (me *tmplDotField) fixedSize() int {
-	if me.fixedsize == 0 {
+	if me.fixedsize == 0 && tdot.allTypesCollected {
 		me.fixedsize = -1
-		mult, tn := 1, me.typeIdent
-		for tn[0] == '[' {
-			if i := ustr.Pos(tn, "]"); i <= 1 {
-				return me.fixedsize
-			} else if nulen, _ := strconv.Atoi(tn[1:i]); nulen <= 0 {
-				return me.fixedsize
-			} else if mult, tn = mult*nulen, tn[i+1:]; tn == "" {
-				return me.fixedsize
-			}
-		}
-
-		tsyn := tSynonyms[tn]
-		if primsize := typePrimFixedSize(tn); primsize > 0 {
-			me.fixedsize = mult * primsize
-		} else if primsize = typePrimFixedSize(tsyn); primsize > 0 {
+		mult, tn := fixedSizeArrMult(me.typeIdent)
+		if tsyn, primsize := tSynonyms[tn], fixedSizeForTypeSpec(tn); primsize != 0 {
 			me.fixedsize = mult * primsize
 		} else {
-			for _, tdt := range tdot.Types {
-				if tdt.TName == tsyn {
-					me.fixedsize = mult * tdt.fixedSize()
-					break
-				} else if tdt.TName == tn {
-					me.fixedsize = mult * tdt.fixedSize()
+			for _, tdstd := range tdot.Structs {
+				if tdstd.TName == tsyn || tdstd.TName == tn {
+					me.fixedsize = mult * tdstd.fixedSize()
 					break
 				}
 			}
@@ -125,7 +102,7 @@ import (
 	{{- end}}
 )
 
-{{range .Types}}
+{{range .Structs}}
 func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
 	{{if .HasWData}}var data bytes.Buffer{{end}}
 	{{if .HasB0Ptr}}var b0 byte ; var b0s = (*((*[1]byte)(unsafe.Pointer(&b0))))[:] {{end}}

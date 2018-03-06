@@ -25,6 +25,7 @@ type testStruct struct {
 		Balance *[3]**int16
 		Hm      struct {
 			AccountAge int
+			Lookie     []*fixed
 			Any        []interface{} `gogen-dump:"*embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16

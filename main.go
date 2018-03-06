@@ -89,9 +89,10 @@ func main() {
 			}
 		}
 	}
-	if collectTypes(); len(tdot.Types) == 0 {
+	if collectTypes(); len(tdot.Structs) == 0 {
 		println("nothing to generate")
 	} else {
+		tdot.allTypesCollected = true
 		genDump()
 	}
 }
