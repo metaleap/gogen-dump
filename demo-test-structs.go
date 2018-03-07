@@ -30,7 +30,7 @@ type testStruct struct {
 		Hm      struct {
 			AccountAge int
 			Lookie     []fixed
-			Any        []interface{} `gogen-dump:"*embName []embName []*embName []*float32"`
+			Any        []interface{} `gogen-dump:"fixed *fixed []fixed [3]fixed *embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16
 	}
@@ -43,4 +43,5 @@ type embName struct {
 	MiddleNames []***[5]*string
 	LastName    **string
 	Ch          chan bool
+	LeFix       [5]fixed
 }

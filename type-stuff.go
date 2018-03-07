@@ -43,8 +43,8 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 				tagval = tagval[:ustr.Pos(tagval, "\"")]
 				if tagval == "-" {
 					tdf.skip = true
-				} else {
-					tdf.taggedUnion = ustr.Split(tagval, " ")
+				} else if tdf.taggedUnion = ustr.Split(tagval, " "); len(tdf.taggedUnion) > 255 {
+					panic(tdf.FName + ": too many case alternatives for serializable .(type) switch (maximum is 255)")
 				}
 			}
 		}
@@ -181,7 +181,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	if tdot.allStructTypeDefsCollected {
 		for _, tdstd := range tdot.Structs {
 			if tdstd.TName == typeident {
-				return tdstd.fixedSize()
+				return mult * tdstd.fixedSize()
 			}
 		}
 	}

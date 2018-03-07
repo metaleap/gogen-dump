@@ -32,12 +32,12 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 - varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width
 - caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no 'address registry' is kept
 - caution: generated code imports and uses `unsafe` and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
-- caution: no schema/structural versioning or sanity/length checks
+- caution: no explicit or gradual versioning or sanity/length checks
 
 So by and large, use-cases are limited to scenarios such as:
 - local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or corruption of such files at worst only delays but won't break the system),
-- or IPC/RPC across processes/machines with identical endianness and where "schema version" will always be kept in sync (by means of architecture/ops discipline)
-- any-and-all designs where endianness and `struct`ural sameness are guaranteed to remain equivalent between the serializing and deserializing parties and moments (or where a fallback mechanism is sensible and in place).
+- or IPC/RPC across processes/machines with identical endianness and where "schema" structure will always be kept in sync (by means of architecture/ops discipline)
+- any-and-all designs where endianness and `struct`ural (not nominal) type identities are guaranteed to remain equivalent between the serializing and deserializing parties and moments-in-time (or where a fallback mechanism is sensible and in place).
 
 ## Supports all built-in primitive-type fields plus:
 
@@ -56,5 +56,6 @@ So by and large, use-cases are limited to scenarios such as:
 
 ## Further optional flags for tweakers:
 
-- `-safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing**, varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
-- `-optVarintsInFixedSizeds` — faster code is generated for fixed-size fields (incl. structs and arrays that themselves contain no slices, maps, pointers, strings), but varints (`int`, `uint`, `uintptr`) are not considered "fixed-size" for this purpose by default. **If this flag is present**, they will be and then wherever this faster serialization logic occurs, the points made above (for `-safeVarints`) no longer apply and varints occupy the number of bytes dictated by the current machine-word width (4 bytes on 32-bit, 8 bytes on 64-bit), meaning source and destination machines must match not just in endianness but also in that respect.
+- `-safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing** (the default), varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
+- `-optVarintsInFixedSizeds` — faster code is generated for fixed-size fields (incl. structs and arrays that themselves contain no slices, maps, pointers, strings), but varints (`int`, `uint`, `uintptr`) are not considered "fixed-size" for this purpose by default. **If this flag is present**, they will be and then wherever this faster serialization logic occurs, the points made above (for `-safeVarints`) no longer apply and varints occupy the number of bytes dictated by the current machine-word width (4 bytes on 32-bit, 8 bytes on 64-bit), meaning source and destination machines must match not just in endianness and "schema" structure but also in that respect.
+- `-ignoreUnknownTypeCases` — if present, serialization of `interface{}`/`[]interface{}` fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.

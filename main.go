@@ -24,6 +24,8 @@ var (
 	optSafeVarints = false // set to true by presence of a command-line arg -safeVarints
 
 	optVarintsInFixedSizeds = false // set to true by presence of command-line arg -varintsInFixedSizeds
+
+	optIgnoreUnknownTypeCases = false // set to true by presence of command-line arg -ignoreUnknownTypeCases
 )
 
 func main() {
@@ -42,6 +44,8 @@ func main() {
 					optSafeVarints, ditch = true, true
 				case "-varintsInFixedSizeds":
 					optVarintsInFixedSizeds, ditch = true, true
+				case "-ignoreUnknownTypeCases":
+					optIgnoreUnknownTypeCases, ditch = true, true
 				}
 				if ditch {
 					typeNames = append(typeNames[:i], typeNames[i+1:]...)

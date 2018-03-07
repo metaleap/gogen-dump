@@ -175,21 +175,19 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
 			} else if afs := strconv.Itoa(arrfixedsize); arrfixedsize > 0 {
-				tmplW = genSizedW(nfr, mfw+"[0]", afs)
-				tmplR = genSizedR(mfr, typeName, afs)
+				tmplW = genSizedW(nfr, mfw+"[0]", afs) + "/*mooya " + afs + " */"
+				tmplR = genSizedR(mfr, typeName, afs) + "/*booya " + afs + " " + typeName + " */"
 			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
-				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				sfs := strconv.Itoa(fs)
 				if ustr.Pref(mfr, "me.") && tdstd.isIfaceSlice(mfr[3:]) {
 					mfr = mfr + ".(" + typeName + ")"
 				}
-				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
-				tmplR += "\n\t\t" + tr
-				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"[0]", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
-				tmplW += "if " + slen + " > 0 { " + ustr.Replace(tw, // covers up-to 1024TB-large fixed-size/contiguous data.. if we ever get to such RAMs =)
-					"((*["+strconv.Itoa(fs)+"]byte)(unsafe.Pointer(", "((*[1125899906842623]byte)(unsafe.Pointer(",
-					"[0]))[:])", "[0]))[:"+strconv.Itoa(fs)+"*"+slen+"])",
-				) + " }"
-				tmplR += "\n\t}"
+				tmplR += "if " + slen + " > 0 { " +
+					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + mfr + "[0])))[0:" + sfs + "*" + slen + "], data[pos:pos+(" + sfs + "*" + slen + ")]) " +
+					" ; pos += (" + sfs + "*" + slen + ") }"
+				tmplW += "if " + slen + " > 0 { " +
+					" buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&" + mfw + "[0]))[:" + sfs + "*" + slen + "]) " +
+					" }"
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
@@ -215,7 +213,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				tmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
 			}
 			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + " = nil"
-			tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
+			if optIgnoreUnknownTypeCases {
+				tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
+			} else {
+				tdot.Imps["fmt"] = "fmt"
+				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\treturn fmt.Errorf(\"" + tdstd.TName + "." + ustr.Until(ustr.TrimPref(altNoMe, "me."), "[") + ": type %T not mentioned in tagged-union field-tag\", t_" + nfr + ")"
+			}
 			tmplR += "\n\t}"
 			tmplW += "\n\t}"
 		} else {

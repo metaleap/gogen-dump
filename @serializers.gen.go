@@ -6,173 +6,9 @@ import (
 	"bytes"
 	"io"
 	"unsafe"
+
+	fmt "fmt"
 )
-
-func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
-
-	l_FirstName := (len(me.FirstName))
-	buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:])
-	buf.WriteString(me.FirstName)
-
-	l_MiddleNames := (len(me.MiddleNames))
-	buf.Write((*[8]byte)(unsafe.Pointer(&l_MiddleNames))[:])
-	for i_MiddleNames := 0; i_MiddleNames < (l_MiddleNames); i_MiddleNames++ {
-		if me.MiddleNames[i_MiddleNames] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			if *me.MiddleNames[i_MiddleNames] == nil {
-				buf.WriteByte(0)
-			} else {
-				buf.WriteByte(1)
-				if **me.MiddleNames[i_MiddleNames] == nil {
-					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					for ii_i_MiddleNames := 0; ii_i_MiddleNames < 5; ii_i_MiddleNames++ {
-						if (***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames] == nil {
-							buf.WriteByte(0)
-						} else {
-							buf.WriteByte(1)
-							l_ii_i_MiddleNames := (len((*(***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames])))
-							buf.Write((*[8]byte)(unsafe.Pointer(&l_ii_i_MiddleNames))[:])
-							buf.WriteString((*(***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames]))
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if me.LastName == nil {
-		buf.WriteByte(0)
-	} else {
-		buf.WriteByte(1)
-		if *me.LastName == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			l_LastName := (len((**me.LastName)))
-			buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:])
-			buf.WriteString((**me.LastName))
-		}
-	}
-
-	return
-}
-
-func (me *embName) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
-func (me *embName) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
-		data = buf.Bytes()
-	}
-	return
-}
-
-func (me *embName) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
-	}
-	return
-}
-
-func (me *embName) UnmarshalBinary(data []byte) (err error) {
-
-	var pos int
-
-	l_FirstName := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
-	me.FirstName = string(data[pos : pos+l_FirstName])
-	pos += l_FirstName
-
-	l_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
-	me.MiddleNames = make([]***[5]*string, l_MiddleNames)
-	for i_MiddleNames := 0; i_MiddleNames < (l_MiddleNames); i_MiddleNames++ {
-		if pos++; data[pos-1] != 0 {
-			if pos++; data[pos-1] != 0 {
-				if pos++; data[pos-1] != 0 {
-					v_i_MiddleNames := [5]*string{}
-					for ii_i_MiddleNames := 0; ii_i_MiddleNames < 5; ii_i_MiddleNames++ {
-						if pos++; data[pos-1] != 0 {
-							l_ii_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
-							pos += 8
-							v_ii_i_MiddleNames := string(data[pos : pos+l_ii_i_MiddleNames])
-							pos += l_ii_i_MiddleNames
-							v_i_MiddleNames[ii_i_MiddleNames] = &v_ii_i_MiddleNames
-						}
-					}
-					p0_i_MiddleNames := &v_i_MiddleNames
-					p1_i_MiddleNames := &p0_i_MiddleNames
-					me.MiddleNames[i_MiddleNames] = &p1_i_MiddleNames
-				}
-			}
-		}
-	}
-
-	if pos++; data[pos-1] == 0 {
-		me.LastName = nil
-	} else {
-		if pos++; data[pos-1] == 0 {
-			me.LastName = nil
-		} else {
-			l_LastName := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			v_LastName := string(data[pos : pos+l_LastName]) /*pos += l_LastName */
-			p0_LastName := &v_LastName
-			me.LastName = &p0_LastName
-		}
-	}
-
-	return
-}
-
-func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
-
-	buf.Write((*[2036]byte)(unsafe.Pointer(me))[:])
-
-	return
-}
-
-func (me *fixed) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
-func (me *fixed) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
-		data = buf.Bytes()
-	}
-	return
-}
-
-func (me *fixed) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
-	}
-	return
-}
-
-func (me *fixed) UnmarshalBinary(data []byte) (err error) {
-
-	*me = *((*fixed)(unsafe.Pointer(&data[0])))
-
-	return
-}
 
 func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
@@ -187,7 +23,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.DingDong.Complex))))[:])
 
-	buf.Write(((*[504]byte)(unsafe.Pointer(&(me.DingDong.FixedSize[0]))))[:])
+	buf.Write(((*[504]byte)(unsafe.Pointer(&(me.DingDong.FixedSize[0]))))[:]) /*mooya 504 */
 
 	if me.Hm.Balance == nil {
 		buf.WriteByte(0)
@@ -220,8 +56,29 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	buf.Write((*[8]byte)(unsafe.Pointer(&l_HmꓸHmꓸAny))[:])
 	for i_HmꓸHmꓸAny := 0; i_HmꓸHmꓸAny < (l_HmꓸHmꓸAny); i_HmꓸHmꓸAny++ {
 		switch t_i_HmꓸHmꓸAny := me.Hm.Hm.Any[i_HmꓸHmꓸAny].(type) {
-		case *embName:
+		case fixed:
 			buf.WriteByte(1)
+			buf.Write((*[2036]byte)(unsafe.Pointer(&t_i_HmꓸHmꓸAny))[:])
+		case *fixed:
+			buf.WriteByte(2)
+			if t_i_HmꓸHmꓸAny == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				buf.Write((*[2036]byte)(unsafe.Pointer(t_i_HmꓸHmꓸAny))[:])
+			}
+		case []fixed:
+			buf.WriteByte(3)
+			l_i_HmꓸHmꓸAny := (len(t_i_HmꓸHmꓸAny))
+			buf.Write((*[8]byte)(unsafe.Pointer(&l_i_HmꓸHmꓸAny))[:])
+			if (l_i_HmꓸHmꓸAny) > 0 {
+				buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&t_i_HmꓸHmꓸAny[0]))[:2036*(l_i_HmꓸHmꓸAny)])
+			}
+		case [3]fixed:
+			buf.WriteByte(4)
+			buf.Write(((*[6108]byte)(unsafe.Pointer(&(t_i_HmꓸHmꓸAny[0]))))[:]) /*mooya 6108 */
+		case *embName:
+			buf.WriteByte(5)
 			if t_i_HmꓸHmꓸAny == nil {
 				buf.WriteByte(0)
 			} else {
@@ -234,7 +91,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 				data.WriteTo(buf)
 			}
 		case []embName:
-			buf.WriteByte(2)
+			buf.WriteByte(6)
 			l_i_HmꓸHmꓸAny := (len(t_i_HmꓸHmꓸAny))
 			buf.Write((*[8]byte)(unsafe.Pointer(&l_i_HmꓸHmꓸAny))[:])
 			for ii_i_HmꓸHmꓸAny := 0; ii_i_HmꓸHmꓸAny < (l_i_HmꓸHmꓸAny); ii_i_HmꓸHmꓸAny++ {
@@ -246,7 +103,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 				data.WriteTo(buf)
 			}
 		case []*embName:
-			buf.WriteByte(3)
+			buf.WriteByte(7)
 			l_i_HmꓸHmꓸAny := (len(t_i_HmꓸHmꓸAny))
 			buf.Write((*[8]byte)(unsafe.Pointer(&l_i_HmꓸHmꓸAny))[:])
 			for ii_i_HmꓸHmꓸAny := 0; ii_i_HmꓸHmꓸAny < (l_i_HmꓸHmꓸAny); ii_i_HmꓸHmꓸAny++ {
@@ -263,7 +120,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 				}
 			}
 		case []*float32:
-			buf.WriteByte(4)
+			buf.WriteByte(8)
 			l_i_HmꓸHmꓸAny := (len(t_i_HmꓸHmꓸAny))
 			buf.Write((*[8]byte)(unsafe.Pointer(&l_i_HmꓸHmꓸAny))[:])
 			for ii_i_HmꓸHmꓸAny := 0; ii_i_HmꓸHmꓸAny < (l_i_HmꓸHmꓸAny); ii_i_HmꓸHmꓸAny++ {
@@ -274,8 +131,10 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 					buf.Write(((*[4]byte)(unsafe.Pointer(t_i_HmꓸHmꓸAny[ii_i_HmꓸHmꓸAny])))[:])
 				}
 			}
-		default:
+		case nil:
 			buf.WriteByte(0)
+		default:
+			return fmt.Errorf("testStruct.Hm.Hm.Any: type %T not mentioned in tagged-union field-tag", t_i_HmꓸHmꓸAny)
 		}
 	}
 
@@ -375,7 +234,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	pos += 16
 
 	me.DingDong.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[pos])))
-	pos += 504
+	pos += 504 /*booya 504 [9][7]float64 */
 
 	if pos++; data[pos-1] == 0 {
 		me.Hm.Balance = nil
@@ -400,9 +259,9 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	l_HmꓸHmꓸLookie := (*((*int)(unsafe.Pointer(&data[pos]))))
 	pos += 8
 	me.Hm.Hm.Lookie = make([]fixed, l_HmꓸHmꓸLookie)
-	for i_HmꓸHmꓸLookie := 0; i_HmꓸHmꓸLookie < (l_HmꓸHmꓸLookie); i_HmꓸHmꓸLookie++ {
-		me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie] = *((*fixed)(unsafe.Pointer(&data[pos])))
-		pos += 2036
+	if (l_HmꓸHmꓸLookie) > 0 {
+		copy(((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Lookie[0])))[0:2036*(l_HmꓸHmꓸLookie)], data[pos:pos+(2036*(l_HmꓸHmꓸLookie))])
+		pos += (2036 * (l_HmꓸHmꓸLookie))
 	}
 
 	l_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
@@ -413,6 +272,26 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 		pos++
 		switch t_i_HmꓸHmꓸAny {
 		case 1:
+			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = *((*fixed)(unsafe.Pointer(&data[pos])))
+			pos += 2036
+		case 2:
+			if pos++; data[pos-1] != 0 {
+				v_i_HmꓸHmꓸAny := *((*fixed)(unsafe.Pointer(&data[pos])))
+				pos += 2036
+				me.Hm.Hm.Any[i_HmꓸHmꓸAny] = &v_i_HmꓸHmꓸAny
+			}
+		case 3:
+			l_i_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
+			pos += 8
+			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = make([]fixed, l_i_HmꓸHmꓸAny)
+			if (l_i_HmꓸHmꓸAny) > 0 {
+				copy(((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Any[i_HmꓸHmꓸAny].([]fixed)[0])))[0:2036*(l_i_HmꓸHmꓸAny)], data[pos:pos+(2036*(l_i_HmꓸHmꓸAny))])
+				pos += (2036 * (l_i_HmꓸHmꓸAny))
+			}
+		case 4:
+			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = *((*[3]fixed)(unsafe.Pointer(&data[pos])))
+			pos += 6108 /*booya 6108 [3]fixed */
+		case 5:
 			if pos++; data[pos-1] != 0 {
 				v_i_HmꓸHmꓸAny := embName{}
 				l_i_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
@@ -423,7 +302,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 				pos += l_i_HmꓸHmꓸAny
 				me.Hm.Hm.Any[i_HmꓸHmꓸAny] = &v_i_HmꓸHmꓸAny
 			}
-		case 2:
+		case 6:
 			l_i_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
 			pos += 8
 			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = make([]embName, l_i_HmꓸHmꓸAny)
@@ -435,7 +314,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 				}
 				pos += l_ii_i_HmꓸHmꓸAny
 			}
-		case 3:
+		case 7:
 			l_i_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
 			pos += 8
 			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = make([]*embName, l_i_HmꓸHmꓸAny)
@@ -451,7 +330,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 					me.Hm.Hm.Any[i_HmꓸHmꓸAny].([]*embName)[ii_i_HmꓸHmꓸAny] = &v_ii_i_HmꓸHmꓸAny
 				}
 			}
-		case 4:
+		case 8:
 			l_i_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
 			pos += 8
 			me.Hm.Hm.Any[i_HmꓸHmꓸAny] = make([]*float32, l_i_HmꓸHmꓸAny)
@@ -520,6 +399,178 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 			}
 		}
 	}
+
+	return
+}
+
+func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
+
+	l_FirstName := (len(me.FirstName))
+	buf.Write((*[8]byte)(unsafe.Pointer(&l_FirstName))[:])
+	buf.WriteString(me.FirstName)
+
+	l_MiddleNames := (len(me.MiddleNames))
+	buf.Write((*[8]byte)(unsafe.Pointer(&l_MiddleNames))[:])
+	for i_MiddleNames := 0; i_MiddleNames < (l_MiddleNames); i_MiddleNames++ {
+		if me.MiddleNames[i_MiddleNames] == nil {
+			buf.WriteByte(0)
+		} else {
+			buf.WriteByte(1)
+			if *me.MiddleNames[i_MiddleNames] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				if **me.MiddleNames[i_MiddleNames] == nil {
+					buf.WriteByte(0)
+				} else {
+					buf.WriteByte(1)
+					for ii_i_MiddleNames := 0; ii_i_MiddleNames < 5; ii_i_MiddleNames++ {
+						if (***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames] == nil {
+							buf.WriteByte(0)
+						} else {
+							buf.WriteByte(1)
+							l_ii_i_MiddleNames := (len((*(***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames])))
+							buf.Write((*[8]byte)(unsafe.Pointer(&l_ii_i_MiddleNames))[:])
+							buf.WriteString((*(***me.MiddleNames[i_MiddleNames])[ii_i_MiddleNames]))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if me.LastName == nil {
+		buf.WriteByte(0)
+	} else {
+		buf.WriteByte(1)
+		if *me.LastName == nil {
+			buf.WriteByte(0)
+		} else {
+			buf.WriteByte(1)
+			l_LastName := (len((**me.LastName)))
+			buf.Write((*[8]byte)(unsafe.Pointer(&l_LastName))[:])
+			buf.WriteString((**me.LastName))
+		}
+	}
+
+	buf.Write(((*[10180]byte)(unsafe.Pointer(&(me.LeFix[0]))))[:]) /*mooya 10180 */
+
+	return
+}
+
+func (me *embName) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+	if err := me.writeTo(&buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
+
+func (me *embName) MarshalBinary() (data []byte, err error) {
+	var buf bytes.Buffer
+	if err = me.writeTo(&buf); err == nil {
+		data = buf.Bytes()
+	}
+	return
+}
+
+func (me *embName) ReadFrom(r io.Reader) (n int64, err error) {
+	var buf bytes.Buffer
+	if n, err = buf.ReadFrom(r); err == nil {
+		err = me.UnmarshalBinary(buf.Bytes())
+	}
+	return
+}
+
+func (me *embName) UnmarshalBinary(data []byte) (err error) {
+
+	var pos int
+
+	l_FirstName := (*((*int)(unsafe.Pointer(&data[pos]))))
+	pos += 8
+	me.FirstName = string(data[pos : pos+l_FirstName])
+	pos += l_FirstName
+
+	l_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
+	pos += 8
+	me.MiddleNames = make([]***[5]*string, l_MiddleNames)
+	for i_MiddleNames := 0; i_MiddleNames < (l_MiddleNames); i_MiddleNames++ {
+		if pos++; data[pos-1] != 0 {
+			if pos++; data[pos-1] != 0 {
+				if pos++; data[pos-1] != 0 {
+					v_i_MiddleNames := [5]*string{}
+					for ii_i_MiddleNames := 0; ii_i_MiddleNames < 5; ii_i_MiddleNames++ {
+						if pos++; data[pos-1] != 0 {
+							l_ii_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
+							pos += 8
+							v_ii_i_MiddleNames := string(data[pos : pos+l_ii_i_MiddleNames])
+							pos += l_ii_i_MiddleNames
+							v_i_MiddleNames[ii_i_MiddleNames] = &v_ii_i_MiddleNames
+						}
+					}
+					p0_i_MiddleNames := &v_i_MiddleNames
+					p1_i_MiddleNames := &p0_i_MiddleNames
+					me.MiddleNames[i_MiddleNames] = &p1_i_MiddleNames
+				}
+			}
+		}
+	}
+
+	if pos++; data[pos-1] == 0 {
+		me.LastName = nil
+	} else {
+		if pos++; data[pos-1] == 0 {
+			me.LastName = nil
+		} else {
+			l_LastName := (*((*int)(unsafe.Pointer(&data[pos]))))
+			pos += 8
+			v_LastName := string(data[pos : pos+l_LastName])
+			pos += l_LastName
+			p0_LastName := &v_LastName
+			me.LastName = &p0_LastName
+		}
+	}
+
+	me.LeFix = *((*[5]fixed)(unsafe.Pointer(&data[pos])))
+	pos += 10180 /*booya 10180 [5]fixed */
+
+	return
+}
+
+func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
+
+	buf.Write((*[2036]byte)(unsafe.Pointer(me))[:])
+
+	return
+}
+
+func (me *fixed) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+	if err := me.writeTo(&buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
+
+func (me *fixed) MarshalBinary() (data []byte, err error) {
+	var buf bytes.Buffer
+	if err = me.writeTo(&buf); err == nil {
+		data = buf.Bytes()
+	}
+	return
+}
+
+func (me *fixed) ReadFrom(r io.Reader) (n int64, err error) {
+	var buf bytes.Buffer
+	if n, err = buf.ReadFrom(r); err == nil {
+		err = me.UnmarshalBinary(buf.Bytes())
+	}
+	return
+}
+
+func (me *fixed) UnmarshalBinary(data []byte) (err error) {
+
+	*me = *((*fixed)(unsafe.Pointer(&data[0])))
 
 	return
 }
