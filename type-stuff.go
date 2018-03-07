@@ -58,7 +58,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 			} else if tdf.typeIdent, tdf.fixedsize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
 				tdf.skip = true
 			} else {
-				tdf.isIfaceSlice = (tdf.typeIdent == "[]interface{}")
+				tdf.isIfaceSlice = (tdf.finalTypeIdent() == "[]interface{}")
 			}
 		}
 		if !tdf.skip {

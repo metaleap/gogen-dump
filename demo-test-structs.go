@@ -20,8 +20,12 @@ type fixed struct {
 
 type testStruct struct {
 	embName
-	Deleted bool `gogen-dump:"-"`
-	Hm      struct {
+	Deleted  bool `gogen-dump:"-"`
+	DingDong struct {
+		Complex   complex128
+		FixedSize [9][7]float64
+	}
+	Hm struct {
 		Balance *[3]**int16
 		Hm      struct {
 			AccountAge int
@@ -30,17 +34,13 @@ type testStruct struct {
 		}
 		Foo [][2]map[rune]***[]*int16
 	}
-	DingDong struct {
-		Complex   complex128
-		FixedSize [9][7]float64
-	}
 	Age ***uint
 }
 
 type embName struct {
-	FirstName   string
-	MiddleNames *[]***[5]*string
-	LastName    **string
 	Fn          func()
+	FirstName   string
+	MiddleNames []***[5]*string
+	LastName    **string
 	Ch          chan bool
 }

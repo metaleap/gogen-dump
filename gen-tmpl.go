@@ -23,6 +23,8 @@ type tmplDotStructTypeDef struct {
 	HasWData bool
 	HasB0Ptr bool
 	HasB1Ptr bool
+	TmplR    string
+	TmplW    string
 
 	fixedsize int
 }
@@ -71,6 +73,14 @@ type tmplDotField struct {
 	isLast       bool
 }
 
+func (me *tmplDotField) finalTypeIdent() (typeident string) {
+	typeident = me.typeIdent
+	for tsyn := tSynonyms[typeident]; tsyn != ""; tsyn = tSynonyms[typeident] {
+		typeident = tsyn
+	}
+	return
+}
+
 func (me *tmplDotField) fixedSize() int {
 	if me.fixedsize == 0 && tdot.allTypesCollected {
 		me.fixedsize = -1
@@ -104,11 +114,15 @@ import (
 
 {{range .Structs}}
 func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
+	{{if .TmplW}}
+	{{.TmplW}}
+	{{else}}
 	{{if .HasWData}}var data bytes.Buffer{{end}}
 	{{if .HasB0Ptr}}var b0 byte ; var b0s = (*((*[1]byte)(unsafe.Pointer(&b0))))[:] {{end}}
 	{{if .HasB1Ptr}}var b1 byte = 1 ; var b1s = (*((*[1]byte)(unsafe.Pointer(&b1))))[:] {{end}}
 	{{range .Fields}}
 	{{.TmplW}}
+	{{end}}
 	{{end}}
 	return
 }
@@ -130,9 +144,13 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
+	{{if .TmplR}}
+	{{.TmplR}}
+	{{else}}
 	var pos int
 	{{range .Fields}}
 	{{.TmplR}}
+	{{end}}
 	{{end}}
 	return
 }

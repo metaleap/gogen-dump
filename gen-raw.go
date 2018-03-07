@@ -10,9 +10,13 @@ import (
 
 func genDump() {
 	for _, tdt := range tdot.Structs {
+		if fs := tdt.fixedSize(); fs > 0 {
+			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[0])))"
+			tdt.TmplW = "buf.Write((*[" + strconv.Itoa(fs) + "]byte)(unsafe.Pointer(me))[:])"
+		}
 		for _, tdf := range tdt.Fields {
 			tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, 0, 0, tdf.taggedUnion)
-			if tdf.isLast { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to pos
+			if tdf.isLast && !ustr.Has(tdf.finalTypeIdent(), "[") { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to pos
 				lastp, lastpalt := ustr.Last(tdf.TmplR, "pos++"), ustr.Last(tdf.TmplR, "pos +=")
 				if lastpalt > lastp {
 					lastp = lastpalt
