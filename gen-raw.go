@@ -153,10 +153,10 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				}
 				arrfixedsize = fixedSizeForTypeSpec(typeName)
 			}
-			valtypespec, idx := typeName[pclose+1:], ustr.Times("i", iterDepth+1)+"_"+nfr
+			valtypespec, idx := typeName[pclose+1:], ustr.Times("i" /*iterDepth+*/, 1)+"_"+nfr
 
 			if ismap {
-				mk, mv := ustr.Times("mk_", iterDepth+1)+"_"+nfr, ustr.Times("mv_", iterDepth+1)+nfr
+				mk, mv := ustr.Times("mk_" /*iterDepth+*/, 1)+"_"+nfr, ustr.Times("mv_" /*iterDepth+*/, 1)+nfr
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
 
@@ -175,13 +175,11 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
 			} else if afs := strconv.Itoa(arrfixedsize); arrfixedsize > 0 {
-				tmplW = genSizedW(nfr, mfw+"[0]", afs) + "/*mooya " + afs + " */"
-				tmplR = genSizedR(mfr, typeName, afs) + "/*booya " + afs + " " + typeName + " */"
+				tmplW = genSizedW(nfr, mfw+"[0]", afs)
+				tmplR = genSizedR(mfr, typeName, afs)
 			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
 				sfs := strconv.Itoa(fs)
-				if ustr.Pref(mfr, "me.") && tdstd.isIfaceSlice(mfr[3:]) {
-					mfr = mfr + ".(" + typeName + ")"
-				}
+				mfr = tdstd.addTypeIfIface(mfr, typeName)
 				tmplR += "if " + slen + " > 0 { " +
 					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + mfr + "[0])))[0:" + sfs + "*" + slen + "], data[pos:pos+(" + sfs + "*" + slen + ")]) " +
 					" ; pos += (" + sfs + "*" + slen + ") }"
@@ -191,9 +189,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-				if ustr.Pref(mfr, "me.") && tdstd.isIfaceSlice(mfr[3:]) {
-					mfr = mfr + ".(" + typeName + ")"
-				}
+				mfr = tdstd.addTypeIfIface(mfr, typeName)
 				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
@@ -257,6 +253,13 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 		}
 	}
 	return
+}
+
+func (me *tmplDotStructTypeDef) addTypeIfIface(mfr string, typeName string) string {
+	if ustr.Pref(mfr, "me.") && (me.isFieldIfaceSlice(mfr[3:]) || me.isFieldIface(mfr[3:])) {
+		mfr = mfr + ".(" + typeName + ")"
+	}
+	return mfr
 }
 
 func genSizedR(mfr string, typeName string, byteSize string) string {

@@ -58,6 +58,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 			} else if tdf.typeIdent, tdf.fixedsize = typeIdentAndFixedSize(fld.Type); tdf.typeIdent == "" {
 				tdf.skip = true
 			} else {
+				tdf.isIface = (tdf.finalTypeIdent() == "interface{}")
 				tdf.isIfaceSlice = (tdf.finalTypeIdent() == "[]interface{}")
 			}
 		}
@@ -133,8 +134,10 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 func fixedSizeArrMult(arrTypeIdent string) (mult int, elemTypeIdent string) {
 	mult, elemTypeIdent = 1, arrTypeIdent
 	for elemTypeIdent[0] == '[' {
-		if i := ustr.Pos(elemTypeIdent, "]"); i <= 1 {
+		if i := ustr.Pos(elemTypeIdent, "]"); i < 0 {
 			return 1, ""
+		} else if i == 1 {
+			return 1, elemTypeIdent[2:]
 		} else if nulen, _ := strconv.Atoi(elemTypeIdent[1:i]); nulen <= 0 {
 			return 1, ""
 		} else if mult, elemTypeIdent = mult*nulen, elemTypeIdent[i+1:]; elemTypeIdent == "" {

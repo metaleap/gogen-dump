@@ -95,7 +95,16 @@ type tmplDotStructTypeDef struct {
 	fixedsize int
 }
 
-func (me *tmplDotStructTypeDef) isIfaceSlice(name string) bool {
+func (me *tmplDotStructTypeDef) isFieldIface(name string) bool {
+	for _, tdf := range me.Fields {
+		if tdf.FName == name {
+			return tdf.isIface
+		}
+	}
+	return false
+}
+
+func (me *tmplDotStructTypeDef) isFieldIfaceSlice(name string) bool {
 	if i := strings.Index(name, "["); i > 0 {
 		name = name[:i]
 		for i = range me.Fields {
@@ -135,6 +144,7 @@ type tmplDotField struct {
 	taggedUnion  []string
 	skip         bool
 	fixedsize    int
+	isIface      bool
 	isIfaceSlice bool
 	isLast       bool
 }
