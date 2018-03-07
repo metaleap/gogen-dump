@@ -34,7 +34,7 @@ type testStruct struct {
 		Hm      struct {
 			AccountAge int
 			Lookie     []fixed
-			Any        iface1 `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
+			Any        map[*fixed]iface1 `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16
 	}

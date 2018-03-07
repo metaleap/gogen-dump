@@ -25,7 +25,7 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 
 - no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema" (so `gogen-dump` only generates methods, not types)
 - thanks to the above, no use of `reflect`-based struct type-def introspection at runtime or code-gen time, so private fields too can be (de)serialized
-- unlike `gob` and most other (de)serialization schemes, does not de/encode field names (or even field/type IDs or tags, except for specially-tagged `interface{}`/`[]interface{}`-typed fields as described below) but rather purely follows (generation-time) type *structure*
+- unlike `gob` and most other (de)serialization schemes, does not de/encode field names (or even field/type IDs or tags, except for specially-tagged interface-typed fields as described below) but rather purely follows (generation-time) type *structure*
 
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:
 
@@ -43,11 +43,11 @@ So by and large, use-cases are limited to scenarios such as:
 
 - fields to other structs (or pointers/slices/maps/arrays/etc. referring to them) that have `gogen-dump`-generated (de)serialization, too
 - fields to any types (or pointers/slices/maps/arrays/etc. referring to them) implementing *both* `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`
-- `interface{}` (or `[]interface{}`) fields denoted as unions/sums via a *Go struct field tag* such as
+- interface-typed fields denoted as unions/sums via a *Go struct field tag* such as
 
         myField interface{} `gogen-dump:"bool []byte somePkg.otherType *orAnotherType"`
 
-    (only concrete types should be named in there, no further interfaces, maximum of 255 entries)
+    (only concrete types should be named in there, no further interfaces, maximum of 255 entries, also works for slice/array/pointer/map(value)-of-interface-type fields/values)
 - fields to directly placed (but not indirectly-referenced) inline in-struct 'anonymous' sub-structs to arbitrary nesting depths
 - all of a `struct`'s embeds are 'fields' (and dealt with as described above+below), too, for our purposes (as indeed internally they are anyway)
 - all of the above (except inline in-struct 'anonymous' sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
@@ -58,4 +58,4 @@ So by and large, use-cases are limited to scenarios such as:
 
 - `-safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing** (the default), varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
 - `-optVarintsInFixedSizeds` — faster code is generated for fixed-size fields (incl. structs and arrays that themselves contain no slices, maps, pointers, strings), but varints (`int`, `uint`, `uintptr`) are not considered "fixed-size" for this purpose by default. **If this flag is present**, they will be and then wherever this faster serialization logic occurs, the points made above (for `-safeVarints`) no longer apply and varints occupy the number of bytes dictated by the current machine-word width (4 bytes on 32-bit, 8 bytes on 64-bit), meaning source and destination machines must match not just in endianness and "schema" structure but also in that respect.
-- `-ignoreUnknownTypeCases` — if present, serialization of `interface{}`/`[]interface{}` fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.
+- `-ignoreUnknownTypeCases` — if present, serialization of interface-typed fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.

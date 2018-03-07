@@ -61,10 +61,10 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 	if numIndir > 0 {
 		mfr = "v_" + nfr + ":"
 		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
-	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "mk_") || ustr.Pref(nf, "mv_")) {
-		mfr = "mkv_" + nfr
 	} else if altNoMe == "" && tmpVarPref != "" {
 		mfr = tmpVarPref + nfr
+	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "mk_") || ustr.Pref(nf, "mv_")) {
+		mfr = "mkv_" + nfr
 	}
 	var cast string
 	if optSafeVarints {
@@ -164,12 +164,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 
 				tmplR += "\n\t\tvar mkv_" + mk + " " + typeName[4:pclose]
 				tmplR += "\n\t\tvar mkv_" + mv + " " + valtypespec
-				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tdstd, typeName[4:pclose], "", 0, iterDepth+1, taggedUnion)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tdstd, typeName[4:pclose], "", 0, iterDepth+1, nil)
 				tmplR += "\n\t\t" + tr
 				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				tmplR += "\n\t\t" + mfr + "[mkv_" + mk + "] = mkv_" + mv
-				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tdstd, typeName[4:pclose], "", 0, iterDepth+1, taggedUnion)
+				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tdstd, typeName[4:pclose], "", 0, iterDepth+1, nil)
 				tmplW += "\n\t\t" + tw
 				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
