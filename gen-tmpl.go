@@ -52,6 +52,14 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+func (me *{{.TName}}) ReadFrom(r io.Reader) (n int64, err error) {
+	var buf bytes.Buffer
+	if n, err = buf.ReadFrom(r); err == nil {
+		err = me.UnmarshalBinary(buf.Bytes())
+	}
+	return
+}
+
 func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	{{if .TmplR}}
 	{{.TmplR}}

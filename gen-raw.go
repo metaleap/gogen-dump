@@ -153,7 +153,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				}
 				arrfixedsize = fixedSizeForTypeSpec(typeName)
 			}
-			idx := ustr.Times("i", iterDepth+1) + "_" + nfr
+			valtypespec, idx := typeName[pclose+1:], ustr.Times("i", iterDepth+1)+"_"+nfr
 
 			if ismap {
 				mk, mv := ustr.Times("mk_", iterDepth+1)+"_"+nfr, ustr.Times("mv_", iterDepth+1)+nfr
@@ -161,15 +161,15 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
 
 				tmplR += "\n\t\tvar mkv_" + mk + " " + typeName[4:pclose]
-				tmplR += "\n\t\tvar mkv_" + mv + " " + typeName[pclose+1:]
+				tmplR += "\n\t\tvar mkv_" + mv + " " + valtypespec
 				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tdstd, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
-				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tdstd, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				tmplR += "\n\t\t" + mfr + "[mkv_" + mk + "] = mkv_" + mv
 				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tdstd, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
-				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tdstd, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
 
 				tmplR += "\n\t}"
@@ -177,15 +177,28 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			} else if afs := strconv.Itoa(arrfixedsize); arrfixedsize > 0 {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
+			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
+				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				if ustr.Pref(mfr, "me.") && tdstd.isIfaceSlice(mfr[3:]) {
+					mfr = mfr + ".(" + typeName + ")"
+				}
+				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				tmplR += "\n\t\t" + tr
+				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"[0]", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				tmplW += "if " + slen + " > 0 { " + ustr.Replace(tw, // covers up-to 1024TB-large fixed-size/contiguous data.. if we ever get to such RAMs =)
+					"((*["+strconv.Itoa(fs)+"]byte)(unsafe.Pointer(", "((*[1125899906842623]byte)(unsafe.Pointer(",
+					"[0]))[:])", "[0]))[:"+strconv.Itoa(fs)+"*"+slen+"])",
+				) + " }"
+				tmplR += "\n\t}"
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				if ustr.Pref(mfr, "me.") && tdstd.isIfaceSlice(mfr[3:]) {
 					mfr = mfr + ".(" + typeName + ")"
 				}
-				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
-				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tdstd, typeName[pclose+1:], 0, iterDepth+1, taggedUnion)
+				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
