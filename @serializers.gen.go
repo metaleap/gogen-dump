@@ -10,7 +10,7 @@ import (
 
 func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
 
-	buf.Write((*[539]byte)(unsafe.Pointer(me))[:])
+	buf.Write((*[2036]byte)(unsafe.Pointer(me))[:])
 
 	return
 }
@@ -81,7 +81,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 			buf.WriteByte(0)
 		} else {
 			buf.WriteByte(1)
-			buf.Write((*[539]byte)(unsafe.Pointer(me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie]))[:])
+			buf.Write((*[2036]byte)(unsafe.Pointer(me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie]))[:])
 		}
 	}
 
@@ -264,7 +264,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	for i_HmꓸHmꓸLookie := 0; i_HmꓸHmꓸLookie < (l_HmꓸHmꓸLookie); i_HmꓸHmꓸLookie++ {
 		if pos++; data[pos-1] != 0 {
 			v_i_HmꓸHmꓸLookie := *((*fixed)(unsafe.Pointer(&data[pos])))
-			pos += 539
+			pos += 2036
 			me.Hm.Hm.Lookie[i_HmꓸHmꓸLookie] = &v_i_HmꓸHmꓸLookie
 		}
 	}

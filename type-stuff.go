@@ -178,7 +178,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	} else if typeident[0] == '*' || ustr.Pref(typeident, "map[") || ustr.Pref(typeident, "[]") {
 		return -1
 	}
-	if tdot.allTypesCollected {
+	if tdot.allStructTypeDefsCollected {
 		for _, tdstd := range tdot.Structs {
 			if tdstd.TName == typeident {
 				return tdstd.fixedSize()

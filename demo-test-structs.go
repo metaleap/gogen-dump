@@ -5,17 +5,17 @@ type sixteen = complex128
 type fixed struct {
 	eight1 float64
 	eight2 [1]uint64
-	eight3 [2]int64
-	eight4 [3]complex64
-	four1  [4]float32
-	four2  [5]int32
-	four3  [6]uint32
-	four4  [7]rune
-	one1   [8]uint8
-	one2   [9]int8
-	one3   [10]byte
-	sixt1  [11]complex128
-	sixt2  [12]sixteen
+	eight3 [2][3]int64
+	eight4 [4][5]complex64
+	four1  [6][7]float32
+	four2  [8][9]int32
+	four3  [8][7]uint32
+	four4  [6][5]rune
+	one1   [4][3]uint8
+	one2   [2][1]int8
+	one3   [2][3]byte
+	sixt1  [4][5]complex128
+	sixt2  [6][7]sixteen
 }
 
 type testStruct struct {
