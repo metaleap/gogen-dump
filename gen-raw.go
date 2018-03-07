@@ -15,7 +15,7 @@ func genDump() {
 			tdt.TmplW = "buf.Write((*[" + strconv.Itoa(fs) + "]byte)(unsafe.Pointer(me))[:])"
 		}
 		for _, tdf := range tdt.Fields {
-			tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, 0, 0, tdf.taggedUnion)
+			tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, "", 0, 0, tdf.taggedUnion)
 			if tdf.isLast && !ustr.Has(tdf.finalTypeIdent(), "[") { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to pos
 				lastp, lastpalt := ustr.Last(tdf.TmplR, "pos++"), ustr.Last(tdf.TmplR, "pos +=")
 				if lastpalt > lastp {
@@ -49,7 +49,7 @@ func genDump() {
 	os.Stdout.WriteString("generated: " + filePathDst)
 }
 
-func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmplDotStructTypeDef, typeName string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
+func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmplDotStructTypeDef, typeName string, tmpVarPref string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
 	nf, mfw, mfr, lf, nfr := fieldName, "me."+fieldName, "me."+fieldName, "l_"+ustr.Replace(fieldName, ".", "ꓸ"), ustr.Replace(fieldName, ".", "ꓸ")
 	if altNoMe != "" {
 		if mfw = altNoMe; iterDepth > 0 {
@@ -63,6 +63,8 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
 	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "mk_") || ustr.Pref(nf, "mv_")) {
 		mfr = "mkv_" + nfr
+	} else if altNoMe == "" && tmpVarPref != "" {
+		mfr = tmpVarPref + nfr
 	}
 	var cast string
 	if optSafeVarints {
@@ -111,12 +113,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 					break
 				}
 			}
-			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tdstd, typeName[numindir:], numindir, iterDepth, taggedUnion)
+			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tdstd, typeName[numindir:], "", numindir, iterDepth, taggedUnion)
 			for i := 0; i < numindir; i++ {
 				if ustr.Pref(mfr, "v_") || ustr.Pref(mfr, "mkv_") || ustr.Has(mfr, "[") {
 					tmplR += "if pos++; data[pos-1] != 0 { "
 				} else {
-					tmplR += "if pos++; data[pos-1] == 0 { " + mfr + " = nil } else { "
+					tmplR += "if pos++; data[pos-1] == 0 { " + mfr + "= nil } else { "
 				}
 				tmplW += "if " + ustr.Times("*", i) + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; "
 			}
@@ -162,14 +164,14 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 
 				tmplR += "\n\t\tvar mkv_" + mk + " " + typeName[4:pclose]
 				tmplR += "\n\t\tvar mkv_" + mv + " " + valtypespec
-				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tdstd, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tdstd, typeName[4:pclose], "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
-				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				tmplR += "\n\t\t" + mfr + "[mkv_" + mk + "] = mkv_" + mv
-				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tdstd, typeName[4:pclose], 0, iterDepth+1, taggedUnion)
+				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tdstd, typeName[4:pclose], "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
-				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
 
 				tmplR += "\n\t}"
@@ -179,7 +181,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				tmplR = genSizedR(mfr, typeName, afs)
 			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
 				sfs := strconv.Itoa(fs)
-				mfr = tdstd.addTypeIfIface(mfr, typeName)
+				// mfr = tdstd.addTypeIfIface(mfr, typeName, taggedUnion)
 				tmplR += "if " + slen + " > 0 { " +
 					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + mfr + "[0])))[0:" + sfs + "*" + slen + "], data[pos:pos+(" + sfs + "*" + slen + ")]) " +
 					" ; pos += (" + sfs + "*" + slen + ") }"
@@ -189,10 +191,10 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-				mfr = tdstd.addTypeIfIface(mfr, typeName)
-				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				// mfr = tdstd.addTypeIfIface(mfr, typeName, taggedUnion)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
-				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tdstd, valtypespec, 0, iterDepth+1, taggedUnion)
+				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tdstd, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
@@ -203,12 +205,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			tmplR += "t_" + nfr + " := data[pos] ; pos++ ; switch t_" + nfr + " {"
 			tmplW += "switch t_" + nfr + " := " + mfw + ".(type) {"
 			for ti, tu := range taggedUnion {
-				tr, _ := genForFieldOrVarOfNamedTypeRW(nf, mfr, tdstd, tu, 0, iterDepth, nil)
-				tmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + tr
-				_, tw := genForFieldOrVarOfNamedTypeRW(nf, "t_"+nfr, tdstd, tu, 0, iterDepth, nil)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(nf, "", tdstd, tu, "iv_", 0, iterDepth, nil)
+				tmplR += "\n\t\tcase " + strconv.Itoa(ti+1) + ":\n\t\t\t" + "var iv_" + nfr + " " + tu + " ; " + tr + " ; " + mfr + "= iv_" + nfr
+				_, tw := genForFieldOrVarOfNamedTypeRW(nf, "t_"+nfr, tdstd, tu, "", 0, iterDepth, nil)
 				tmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + strconv.Itoa(ti+1) + ") ; " + tw
 			}
-			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + " = nil"
+			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + "= nil"
 			if optIgnoreUnknownTypeCases {
 				tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
 			} else {
@@ -219,6 +221,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			tmplW += "\n\t}"
 		} else {
 			// OTHER
+
 			if fs := fixedSizeForTypeSpec(typeName); fs > 0 {
 				tmplR = mfr + "= *((*" + typeName + ")(unsafe.Pointer(&data[pos]))) ; pos += " + strconv.Itoa(fs)
 				if mfw[0] == '*' {
@@ -230,7 +233,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				}
 				tmplW = "buf.Write((*[" + strconv.Itoa(fs) + "]byte)(unsafe.Pointer(" + mfw + "))[:])"
 			} else if tsyn := tSynonyms[typeName]; tsyn != "" {
-				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tdstd, tsyn, numIndir, iterDepth, taggedUnion)
+				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tdstd, tsyn, "", numIndir, iterDepth, taggedUnion)
 				tmplR = ustr.Replace(tmplR, "(*"+tsyn+")(unsafe.Pointer(", "(*"+typeName+")(unsafe.Pointer(")
 			} else {
 				if ustr.Pref(mfr, "v_") {
@@ -253,13 +256,6 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 		}
 	}
 	return
-}
-
-func (me *tmplDotStructTypeDef) addTypeIfIface(mfr string, typeName string) string {
-	if ustr.Pref(mfr, "me.") && (me.isFieldIfaceSlice(mfr[3:]) || me.isFieldIface(mfr[3:])) {
-		mfr = mfr + ".(" + typeName + ")"
-	}
-	return mfr
 }
 
 func genSizedR(mfr string, typeName string, byteSize string) string {

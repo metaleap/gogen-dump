@@ -1,5 +1,9 @@
 package main
 
+type iface1 interface{}
+
+type iface2 = interface{}
+
 type sixteen = complex128
 
 type fixed struct {
@@ -30,7 +34,7 @@ type testStruct struct {
 		Hm      struct {
 			AccountAge int
 			Lookie     []fixed
-			Any        []interface{} `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
+			Any        iface1 `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"go/format"
 	"io"
-	"strings"
 	"text/template"
 )
 
@@ -95,27 +94,6 @@ type tmplDotStructTypeDef struct {
 	fixedsize int
 }
 
-func (me *tmplDotStructTypeDef) isFieldIface(name string) bool {
-	for _, tdf := range me.Fields {
-		if tdf.FName == name {
-			return tdf.isIface
-		}
-	}
-	return false
-}
-
-func (me *tmplDotStructTypeDef) isFieldIfaceSlice(name string) bool {
-	if i := strings.Index(name, "["); i > 0 {
-		name = name[:i]
-		for i = range me.Fields {
-			if me.Fields[i].FName == name {
-				return me.Fields[i].isIfaceSlice
-			}
-		}
-	}
-	return false
-}
-
 func (me *tmplDotStructTypeDef) fixedSize() int {
 	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
 		for _, fld := range me.Fields {
@@ -140,13 +118,11 @@ type tmplDotField struct {
 	TmplW string
 	TmplR string
 
-	typeIdent    string
-	taggedUnion  []string
-	skip         bool
-	fixedsize    int
-	isIface      bool
-	isIfaceSlice bool
-	isLast       bool
+	typeIdent   string
+	taggedUnion []string
+	skip        bool
+	fixedsize   int
+	isLast      bool
 }
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
