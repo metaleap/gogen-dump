@@ -63,7 +63,7 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	{{if .TmplR}}
 	{{.TmplR}}
 	{{else}}
-	var pos int
+	var p int
 	{{range .Fields}}
 	{{.TmplR}}
 	{{end}}

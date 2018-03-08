@@ -92,93 +92,95 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	l_HmꓸHmꓸAny := (len(me.Hm.Hm.Any))
 	buf.Write((*[8]byte)(unsafe.Pointer(&l_HmꓸHmꓸAny))[:])
-	for mk__HmꓸHmꓸAny, mv_HmꓸHmꓸAny := range me.Hm.Hm.Any {
-		if mk__HmꓸHmꓸAny == nil {
+	for k0, m0 := range me.Hm.Hm.Any {
+		if k0 == nil {
 			buf.WriteByte(0)
 		} else {
 			buf.WriteByte(1)
-			buf.Write((*[2036]byte)(unsafe.Pointer(mk__HmꓸHmꓸAny))[:])
+			buf.Write((*[2036]byte)(unsafe.Pointer(k0))[:])
 		}
-		switch t_mv_HmꓸHmꓸAny := mv_HmꓸHmꓸAny.(type) {
-		case fixed:
-			buf.WriteByte(1)
-			buf.Write((*[2036]byte)(unsafe.Pointer(&t_mv_HmꓸHmꓸAny))[:])
-		case *fixed:
-			buf.WriteByte(2)
-			if t_mv_HmꓸHmꓸAny == nil {
-				buf.WriteByte(0)
-			} else {
+		{
+			switch t := m0.(type) {
+			case fixed:
 				buf.WriteByte(1)
-				buf.Write((*[2036]byte)(unsafe.Pointer(t_mv_HmꓸHmꓸAny))[:])
-			}
-		case []fixed:
-			buf.WriteByte(3)
-			l_mv_HmꓸHmꓸAny := (len(t_mv_HmꓸHmꓸAny))
-			buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_HmꓸHmꓸAny))[:])
-			if (l_mv_HmꓸHmꓸAny) > 0 {
-				buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&t_mv_HmꓸHmꓸAny[0]))[:2036*(l_mv_HmꓸHmꓸAny)])
-			}
-		case [5][6]fixed:
-			buf.WriteByte(4)
-			buf.Write(((*[61080]byte)(unsafe.Pointer(&(t_mv_HmꓸHmꓸAny[0]))))[:])
-		case *embName:
-			buf.WriteByte(5)
-			if t_mv_HmꓸHmꓸAny == nil {
-				buf.WriteByte(0)
-			} else {
-				buf.WriteByte(1)
-				if err = t_mv_HmꓸHmꓸAny.writeTo(&data); err != nil {
-					return
-				}
-				l_mv_HmꓸHmꓸAny := (data.Len())
-				buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_HmꓸHmꓸAny))[:])
-				data.WriteTo(buf)
-			}
-		case []embName:
-			buf.WriteByte(6)
-			l_mv_HmꓸHmꓸAny := (len(t_mv_HmꓸHmꓸAny))
-			buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_HmꓸHmꓸAny))[:])
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				if err = t_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny].writeTo(&data); err != nil {
-					return
-				}
-				l_i_mv_HmꓸHmꓸAny := (data.Len())
-				buf.Write((*[8]byte)(unsafe.Pointer(&l_i_mv_HmꓸHmꓸAny))[:])
-				data.WriteTo(buf)
-			}
-		case []*embName:
-			buf.WriteByte(7)
-			l_mv_HmꓸHmꓸAny := (len(t_mv_HmꓸHmꓸAny))
-			buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_HmꓸHmꓸAny))[:])
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				if t_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny] == nil {
+				buf.Write((*[2036]byte)(unsafe.Pointer(&t))[:])
+			case *fixed:
+				buf.WriteByte(2)
+				if t == nil {
 					buf.WriteByte(0)
 				} else {
 					buf.WriteByte(1)
-					if err = t_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny].writeTo(&data); err != nil {
+					buf.Write((*[2036]byte)(unsafe.Pointer(t))[:])
+				}
+			case []fixed:
+				buf.WriteByte(3)
+				l_m0 := (len(t))
+				buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
+				if (l_m0) > 0 {
+					buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&t[0]))[:2036*(l_m0)])
+				}
+			case [5][6]fixed:
+				buf.WriteByte(4)
+				buf.Write(((*[61080]byte)(unsafe.Pointer(&(t[0]))))[:])
+			case *embName:
+				buf.WriteByte(5)
+				if t == nil {
+					buf.WriteByte(0)
+				} else {
+					buf.WriteByte(1)
+					if err = t.writeTo(&data); err != nil {
 						return
 					}
-					l_i_mv_HmꓸHmꓸAny := (data.Len())
-					buf.Write((*[8]byte)(unsafe.Pointer(&l_i_mv_HmꓸHmꓸAny))[:])
+					l_m0 := (data.Len())
+					buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
 					data.WriteTo(buf)
 				}
-			}
-		case []*float32:
-			buf.WriteByte(8)
-			l_mv_HmꓸHmꓸAny := (len(t_mv_HmꓸHmꓸAny))
-			buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_HmꓸHmꓸAny))[:])
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				if t_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny] == nil {
-					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					buf.Write(((*[4]byte)(unsafe.Pointer(t_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny])))[:])
+			case []embName:
+				buf.WriteByte(6)
+				l_m0 := (len(t))
+				buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					if err = t[i_m0].writeTo(&data); err != nil {
+						return
+					}
+					l_i_m0 := (data.Len())
+					buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
+					data.WriteTo(buf)
 				}
+			case []*embName:
+				buf.WriteByte(7)
+				l_m0 := (len(t))
+				buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					if t[i_m0] == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						if err = t[i_m0].writeTo(&data); err != nil {
+							return
+						}
+						l_i_m0 := (data.Len())
+						buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
+						data.WriteTo(buf)
+					}
+				}
+			case []*float32:
+				buf.WriteByte(8)
+				l_m0 := (len(t))
+				buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					if t[i_m0] == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						buf.Write(((*[4]byte)(unsafe.Pointer(t[i_m0])))[:])
+					}
+				}
+			case nil:
+				buf.WriteByte(0)
+			default:
+				return fmt.Errorf("testStruct.m0: type %T not mentioned in tagged-union field-tag", t)
 			}
-		case nil:
-			buf.WriteByte(0)
-		default:
-			return fmt.Errorf("testStruct.mv_HmꓸHmꓸAny: type %T not mentioned in tagged-union field-tag", t_mv_HmꓸHmꓸAny)
 		}
 	}
 
@@ -188,28 +190,28 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 		for i_i_HmꓸFoo := 0; i_i_HmꓸFoo < 2; i_i_HmꓸFoo++ {
 			l_i_i_HmꓸFoo := (len(me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo]))
 			buf.Write((*[8]byte)(unsafe.Pointer(&l_i_i_HmꓸFoo))[:])
-			for mk__i_i_HmꓸFoo, mv_i_i_HmꓸFoo := range me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo] {
-				buf.Write(((*[4]byte)(unsafe.Pointer(&(mk__i_i_HmꓸFoo))))[:])
-				if mv_i_i_HmꓸFoo == nil {
+			for k2, m2 := range me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo] {
+				buf.Write(((*[4]byte)(unsafe.Pointer(&(k2))))[:])
+				if m2 == nil {
 					buf.WriteByte(0)
 				} else {
 					buf.WriteByte(1)
-					if *mv_i_i_HmꓸFoo == nil {
+					if *m2 == nil {
 						buf.WriteByte(0)
 					} else {
 						buf.WriteByte(1)
-						if **mv_i_i_HmꓸFoo == nil {
+						if **m2 == nil {
 							buf.WriteByte(0)
 						} else {
 							buf.WriteByte(1)
-							l_mv_i_i_HmꓸFoo := (len((***mv_i_i_HmꓸFoo)))
-							buf.Write((*[8]byte)(unsafe.Pointer(&l_mv_i_i_HmꓸFoo))[:])
-							for i_mv_i_i_HmꓸFoo := 0; i_mv_i_i_HmꓸFoo < (l_mv_i_i_HmꓸFoo); i_mv_i_i_HmꓸFoo++ {
-								if (***mv_i_i_HmꓸFoo)[i_mv_i_i_HmꓸFoo] == nil {
+							l_m2 := (len((***m2)))
+							buf.Write((*[8]byte)(unsafe.Pointer(&l_m2))[:])
+							for i_m2 := 0; i_m2 < (l_m2); i_m2++ {
+								if (***m2)[i_m2] == nil {
 									buf.WriteByte(0)
 								} else {
 									buf.WriteByte(1)
-									buf.Write(((*[2]byte)(unsafe.Pointer((***mv_i_i_HmꓸFoo)[i_mv_i_i_HmꓸFoo])))[:])
+									buf.Write(((*[2]byte)(unsafe.Pointer((***m2)[i_m2])))[:])
 								}
 							}
 						}
@@ -270,229 +272,251 @@ func (me *testStruct) ReadFrom(r io.Reader) (n int64, err error) {
 
 func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 
-	var pos int
+	var p int
 
-	l_embName := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
-	if err = me.embName.UnmarshalBinary(data[pos : pos+l_embName]); err != nil {
+	l_embName := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
+	if err = me.embName.UnmarshalBinary(data[p : p+l_embName]); err != nil {
 		return
 	}
-	pos += l_embName
+	p += l_embName
 
-	me.DingDong.Complex = *((*complex128)(unsafe.Pointer(&data[pos])))
-	pos += 16
+	me.DingDong.Complex = *((*complex128)(unsafe.Pointer(&data[p])))
+	p += 16
 
-	me.DingDong.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[pos])))
-	pos += 504
+	me.DingDong.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[p])))
+	p += 504
 
-	var p0HmꓸBalance *[3]**int16
-	if pos++; data[pos-1] != 0 {
-		vHmꓸBalance := [3]**int16{}
-		for i_HmꓸBalance := 0; i_HmꓸBalance < 3; i_HmꓸBalance++ {
-			var p0i_HmꓸBalance **int16
-			var p1i_HmꓸBalance *int16
-			if pos++; data[pos-1] != 0 {
-				if pos++; data[pos-1] != 0 {
-					vi_HmꓸBalance := *((*int16)(unsafe.Pointer(&data[pos])))
-					pos += 2
-					p1i_HmꓸBalance = &vi_HmꓸBalance
+	{
+		var p0 *[3]**int16
+		if p++; data[p-1] != 0 {
+			vHmꓸBalance := [3]**int16{}
+			for i_HmꓸBalance := 0; i_HmꓸBalance < 3; i_HmꓸBalance++ {
+				{
+					var p0 **int16
+					var p1 *int16
+					if p++; data[p-1] != 0 {
+						if p++; data[p-1] != 0 {
+							vi_HmꓸBalance := *((*int16)(unsafe.Pointer(&data[p])))
+							p += 2
+							p1 = &vi_HmꓸBalance
+						}
+						p0 = &p1
+					}
+					vHmꓸBalance[i_HmꓸBalance] = p0
 				}
-				p0i_HmꓸBalance = &p1i_HmꓸBalance
 			}
-			vHmꓸBalance[i_HmꓸBalance] = p0i_HmꓸBalance
+			p0 = &vHmꓸBalance
 		}
-		p0HmꓸBalance = &vHmꓸBalance
+		me.Hm.Balance = p0
 	}
-	me.Hm.Balance = p0HmꓸBalance
 
-	me.Hm.Hm.AccountAge = *((*int)(unsafe.Pointer(&data[pos])))
-	pos += 8
+	me.Hm.Hm.AccountAge = *((*int)(unsafe.Pointer(&data[p])))
+	p += 8
 
-	l_HmꓸHmꓸLookie := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
+	l_HmꓸHmꓸLookie := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
 	me.Hm.Hm.Lookie = make([]fixed, l_HmꓸHmꓸLookie)
 	if (l_HmꓸHmꓸLookie) > 0 {
-		copy(((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Lookie[0])))[0:2036*(l_HmꓸHmꓸLookie)], data[pos:pos+(2036*(l_HmꓸHmꓸLookie))])
-		pos += (2036 * (l_HmꓸHmꓸLookie))
+		copy(((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Lookie[0])))[0:2036*(l_HmꓸHmꓸLookie)], data[p:p+(2036*(l_HmꓸHmꓸLookie))])
+		p += (2036 * (l_HmꓸHmꓸLookie))
 	}
 
-	l_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
+	l_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
 	me.Hm.Hm.Any = make(map[*fixed]iface1, l_HmꓸHmꓸAny)
 	for i_HmꓸHmꓸAny := 0; i_HmꓸHmꓸAny < (l_HmꓸHmꓸAny); i_HmꓸHmꓸAny++ {
-		var mkv_mk__HmꓸHmꓸAny *fixed
-		var mkv_mv_HmꓸHmꓸAny iface1
-		var p0mk__HmꓸHmꓸAny *fixed
-		if pos++; data[pos-1] != 0 {
-			vmk__HmꓸHmꓸAny := *((*fixed)(unsafe.Pointer(&data[pos])))
-			pos += 2036
-			p0mk__HmꓸHmꓸAny = &vmk__HmꓸHmꓸAny
+		var bk0 *fixed
+		var bm0 iface1
+		{
+			var p0 *fixed
+			if p++; data[p-1] != 0 {
+				vk0 := *((*fixed)(unsafe.Pointer(&data[p])))
+				p += 2036
+				p0 = &vk0
+			}
+			bk0 = p0
 		}
-		mkv_mk__HmꓸHmꓸAny = p0mk__HmꓸHmꓸAny
-		t_mv_HmꓸHmꓸAny := data[pos]
-		pos++
-		switch t_mv_HmꓸHmꓸAny {
-		case 1:
-			var ifaceval_mv_HmꓸHmꓸAny fixed
-			ifaceval_mv_HmꓸHmꓸAny = *((*fixed)(unsafe.Pointer(&data[pos])))
-			pos += 2036
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 2:
-			var ifaceval_mv_HmꓸHmꓸAny *fixed
-			var p0mv_HmꓸHmꓸAny *fixed
-			if pos++; data[pos-1] != 0 {
-				vmv_HmꓸHmꓸAny := *((*fixed)(unsafe.Pointer(&data[pos])))
-				pos += 2036
-				p0mv_HmꓸHmꓸAny = &vmv_HmꓸHmꓸAny
-			}
-			ifaceval_mv_HmꓸHmꓸAny = p0mv_HmꓸHmꓸAny
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 3:
-			var ifaceval_mv_HmꓸHmꓸAny []fixed
-			l_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			ifaceval_mv_HmꓸHmꓸAny = make([]fixed, l_mv_HmꓸHmꓸAny)
-			if (l_mv_HmꓸHmꓸAny) > 0 {
-				copy(((*[1125899906842623]byte)(unsafe.Pointer(&ifaceval_mv_HmꓸHmꓸAny[0])))[0:2036*(l_mv_HmꓸHmꓸAny)], data[pos:pos+(2036*(l_mv_HmꓸHmꓸAny))])
-				pos += (2036 * (l_mv_HmꓸHmꓸAny))
-			}
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 4:
-			var ifaceval_mv_HmꓸHmꓸAny [5][6]fixed
-			ifaceval_mv_HmꓸHmꓸAny = *((*[5][6]fixed)(unsafe.Pointer(&data[pos])))
-			pos += 61080
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 5:
-			var ifaceval_mv_HmꓸHmꓸAny *embName
-			var p0mv_HmꓸHmꓸAny *embName
-			if pos++; data[pos-1] != 0 {
-				vmv_HmꓸHmꓸAny := embName{}
-				l_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-				pos += 8
-				if err = vmv_HmꓸHmꓸAny.UnmarshalBinary(data[pos : pos+l_mv_HmꓸHmꓸAny]); err != nil {
-					return
+		{
+			t := data[p]
+			p++
+			switch t {
+			case 1:
+				var u fixed
+				u = *((*fixed)(unsafe.Pointer(&data[p])))
+				p += 2036
+				bm0 = u
+			case 2:
+				var u *fixed
+				{
+					var p0 *fixed
+					if p++; data[p-1] != 0 {
+						vm0 := *((*fixed)(unsafe.Pointer(&data[p])))
+						p += 2036
+						p0 = &vm0
+					}
+					u = p0
 				}
-				pos += l_mv_HmꓸHmꓸAny
-				p0mv_HmꓸHmꓸAny = &vmv_HmꓸHmꓸAny
-			}
-			ifaceval_mv_HmꓸHmꓸAny = p0mv_HmꓸHmꓸAny
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 6:
-			var ifaceval_mv_HmꓸHmꓸAny []embName
-			l_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			ifaceval_mv_HmꓸHmꓸAny = make([]embName, l_mv_HmꓸHmꓸAny)
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				l_i_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-				pos += 8
-				if err = ifaceval_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny].UnmarshalBinary(data[pos : pos+l_i_mv_HmꓸHmꓸAny]); err != nil {
-					return
+				bm0 = u
+			case 3:
+				var u []fixed
+				l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				u = make([]fixed, l_m0)
+				if (l_m0) > 0 {
+					copy(((*[1125899906842623]byte)(unsafe.Pointer(&u[0])))[0:2036*(l_m0)], data[p:p+(2036*(l_m0))])
+					p += (2036 * (l_m0))
 				}
-				pos += l_i_mv_HmꓸHmꓸAny
-			}
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 7:
-			var ifaceval_mv_HmꓸHmꓸAny []*embName
-			l_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			ifaceval_mv_HmꓸHmꓸAny = make([]*embName, l_mv_HmꓸHmꓸAny)
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				var p0i_mv_HmꓸHmꓸAny *embName
-				if pos++; data[pos-1] != 0 {
-					vi_mv_HmꓸHmꓸAny := embName{}
-					l_i_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-					pos += 8
-					if err = vi_mv_HmꓸHmꓸAny.UnmarshalBinary(data[pos : pos+l_i_mv_HmꓸHmꓸAny]); err != nil {
+				bm0 = u
+			case 4:
+				var u [5][6]fixed
+				u = *((*[5][6]fixed)(unsafe.Pointer(&data[p])))
+				p += 61080
+				bm0 = u
+			case 5:
+				var u *embName
+				{
+					var p0 *embName
+					if p++; data[p-1] != 0 {
+						vm0 := embName{}
+						l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+						p += 8
+						if err = vm0.UnmarshalBinary(data[p : p+l_m0]); err != nil {
+							return
+						}
+						p += l_m0
+						p0 = &vm0
+					}
+					u = p0
+				}
+				bm0 = u
+			case 6:
+				var u []embName
+				l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				u = make([]embName, l_m0)
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					l_i_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+					p += 8
+					if err = u[i_m0].UnmarshalBinary(data[p : p+l_i_m0]); err != nil {
 						return
 					}
-					pos += l_i_mv_HmꓸHmꓸAny
-					p0i_mv_HmꓸHmꓸAny = &vi_mv_HmꓸHmꓸAny
+					p += l_i_m0
 				}
-				ifaceval_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny] = p0i_mv_HmꓸHmꓸAny
-			}
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		case 8:
-			var ifaceval_mv_HmꓸHmꓸAny []*float32
-			l_mv_HmꓸHmꓸAny := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			ifaceval_mv_HmꓸHmꓸAny = make([]*float32, l_mv_HmꓸHmꓸAny)
-			for i_mv_HmꓸHmꓸAny := 0; i_mv_HmꓸHmꓸAny < (l_mv_HmꓸHmꓸAny); i_mv_HmꓸHmꓸAny++ {
-				var p0i_mv_HmꓸHmꓸAny *float32
-				if pos++; data[pos-1] != 0 {
-					vi_mv_HmꓸHmꓸAny := *((*float32)(unsafe.Pointer(&data[pos])))
-					pos += 4
-					p0i_mv_HmꓸHmꓸAny = &vi_mv_HmꓸHmꓸAny
+				bm0 = u
+			case 7:
+				var u []*embName
+				l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				u = make([]*embName, l_m0)
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					{
+						var p0 *embName
+						if p++; data[p-1] != 0 {
+							vi_m0 := embName{}
+							l_i_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+							p += 8
+							if err = vi_m0.UnmarshalBinary(data[p : p+l_i_m0]); err != nil {
+								return
+							}
+							p += l_i_m0
+							p0 = &vi_m0
+						}
+						u[i_m0] = p0
+					}
 				}
-				ifaceval_mv_HmꓸHmꓸAny[i_mv_HmꓸHmꓸAny] = p0i_mv_HmꓸHmꓸAny
+				bm0 = u
+			case 8:
+				var u []*float32
+				l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				u = make([]*float32, l_m0)
+				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
+					{
+						var p0 *float32
+						if p++; data[p-1] != 0 {
+							vi_m0 := *((*float32)(unsafe.Pointer(&data[p])))
+							p += 4
+							p0 = &vi_m0
+						}
+						u[i_m0] = p0
+					}
+				}
+				bm0 = u
+			default:
+				bm0 = nil
 			}
-			mkv_mv_HmꓸHmꓸAny = ifaceval_mv_HmꓸHmꓸAny
-		default:
-			mkv_mv_HmꓸHmꓸAny = nil
 		}
-		me.Hm.Hm.Any[mkv_mk__HmꓸHmꓸAny] = mkv_mv_HmꓸHmꓸAny
+		me.Hm.Hm.Any[bk0] = bm0
 	}
 
-	l_HmꓸFoo := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
+	l_HmꓸFoo := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
 	me.Hm.Foo = make([][2]map[rune]***[]*int16, l_HmꓸFoo)
 	for i_HmꓸFoo := 0; i_HmꓸFoo < (l_HmꓸFoo); i_HmꓸFoo++ {
 		for i_i_HmꓸFoo := 0; i_i_HmꓸFoo < 2; i_i_HmꓸFoo++ {
-			l_i_i_HmꓸFoo := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
+			l_i_i_HmꓸFoo := (*((*int)(unsafe.Pointer(&data[p]))))
+			p += 8
 			me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo] = make(map[rune]***[]*int16, l_i_i_HmꓸFoo)
 			for i_i_i_HmꓸFoo := 0; i_i_i_HmꓸFoo < (l_i_i_HmꓸFoo); i_i_i_HmꓸFoo++ {
-				var mkv_mk__i_i_HmꓸFoo rune
-				var mkv_mv_i_i_HmꓸFoo ***[]*int16
-				mkv_mk__i_i_HmꓸFoo = *((*rune)(unsafe.Pointer(&data[pos])))
-				pos += 4
-				var p0mv_i_i_HmꓸFoo ***[]*int16
-				var p1mv_i_i_HmꓸFoo **[]*int16
-				var p2mv_i_i_HmꓸFoo *[]*int16
-				if pos++; data[pos-1] != 0 {
-					if pos++; data[pos-1] != 0 {
-						if pos++; data[pos-1] != 0 {
-							l_mv_i_i_HmꓸFoo := (*((*int)(unsafe.Pointer(&data[pos]))))
-							pos += 8
-							vmv_i_i_HmꓸFoo := make([]*int16, l_mv_i_i_HmꓸFoo)
-							for i_mv_i_i_HmꓸFoo := 0; i_mv_i_i_HmꓸFoo < (l_mv_i_i_HmꓸFoo); i_mv_i_i_HmꓸFoo++ {
-								var p0i_mv_i_i_HmꓸFoo *int16
-								if pos++; data[pos-1] != 0 {
-									vi_mv_i_i_HmꓸFoo := *((*int16)(unsafe.Pointer(&data[pos])))
-									pos += 2
-									p0i_mv_i_i_HmꓸFoo = &vi_mv_i_i_HmꓸFoo
+				var bk2 rune
+				var bm2 ***[]*int16
+				bk2 = *((*rune)(unsafe.Pointer(&data[p])))
+				p += 4
+				{
+					var p0 ***[]*int16
+					var p1 **[]*int16
+					var p2 *[]*int16
+					if p++; data[p-1] != 0 {
+						if p++; data[p-1] != 0 {
+							if p++; data[p-1] != 0 {
+								l_m2 := (*((*int)(unsafe.Pointer(&data[p]))))
+								p += 8
+								vm2 := make([]*int16, l_m2)
+								for i_m2 := 0; i_m2 < (l_m2); i_m2++ {
+									{
+										var p0 *int16
+										if p++; data[p-1] != 0 {
+											vi_m2 := *((*int16)(unsafe.Pointer(&data[p])))
+											p += 2
+											p0 = &vi_m2
+										}
+										vm2[i_m2] = p0
+									}
 								}
-								vmv_i_i_HmꓸFoo[i_mv_i_i_HmꓸFoo] = p0i_mv_i_i_HmꓸFoo
+								p2 = &vm2
 							}
-							p2mv_i_i_HmꓸFoo = &vmv_i_i_HmꓸFoo
+							p1 = &p2
 						}
-						p1mv_i_i_HmꓸFoo = &p2mv_i_i_HmꓸFoo
+						p0 = &p1
 					}
-					p0mv_i_i_HmꓸFoo = &p1mv_i_i_HmꓸFoo
+					bm2 = p0
 				}
-				mkv_mv_i_i_HmꓸFoo = p0mv_i_i_HmꓸFoo
-				me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo][mkv_mk__i_i_HmꓸFoo] = mkv_mv_i_i_HmꓸFoo
+				me.Hm.Foo[i_HmꓸFoo][i_i_HmꓸFoo][bk2] = bm2
 			}
 		}
 	}
 
-	var p0Age ****uint
-	var p1Age ***uint
-	var p2Age **uint
-	var p3Age *uint
-	if pos++; data[pos-1] != 0 {
-		if pos++; data[pos-1] != 0 {
-			if pos++; data[pos-1] != 0 {
-				if pos++; data[pos-1] != 0 {
-					vAge := *((*uint)(unsafe.Pointer(&data[pos]))) /*pos += 8 */
-					p3Age = &vAge
+	{
+		var p0 ****uint
+		var p1 ***uint
+		var p2 **uint
+		var p3 *uint
+		if p++; data[p-1] != 0 {
+			if p++; data[p-1] != 0 {
+				if p++; data[p-1] != 0 {
+					if p++; data[p-1] != 0 {
+						vAge := *((*uint)(unsafe.Pointer(&data[p]))) /* p += 8 */
+						p3 = &vAge
+					}
+					p2 = &p3
 				}
-				p2Age = &p3Age
+				p1 = &p2
 			}
-			p1Age = &p2Age
+			p0 = &p1
 		}
-		p0Age = &p1Age
+		me.Age = p0
 	}
-	me.Age = p0Age
 
 	return
 }
@@ -578,59 +602,65 @@ func (me *embName) ReadFrom(r io.Reader) (n int64, err error) {
 
 func (me *embName) UnmarshalBinary(data []byte) (err error) {
 
-	var pos int
+	var p int
 
-	me.LeFix = *((*[3][4]fixed)(unsafe.Pointer(&data[pos])))
-	pos += 24432
+	me.LeFix = *((*[3][4]fixed)(unsafe.Pointer(&data[p])))
+	p += 24432
 
-	l_FirstName := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
-	me.FirstName = string(data[pos : pos+l_FirstName])
-	pos += l_FirstName
+	l_FirstName := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
+	me.FirstName = string(data[p : p+l_FirstName])
+	p += l_FirstName
 
-	l_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
-	pos += 8
+	l_MiddleNames := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
 	me.MiddleNames = make([]***[5]*string, l_MiddleNames)
 	for i_MiddleNames := 0; i_MiddleNames < (l_MiddleNames); i_MiddleNames++ {
-		var p0i_MiddleNames ***[5]*string
-		var p1i_MiddleNames **[5]*string
-		var p2i_MiddleNames *[5]*string
-		if pos++; data[pos-1] != 0 {
-			if pos++; data[pos-1] != 0 {
-				if pos++; data[pos-1] != 0 {
-					vi_MiddleNames := [5]*string{}
-					for i_i_MiddleNames := 0; i_i_MiddleNames < 5; i_i_MiddleNames++ {
-						var p0i_i_MiddleNames *string
-						if pos++; data[pos-1] != 0 {
-							l_i_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[pos]))))
-							pos += 8
-							vi_i_MiddleNames := string(data[pos : pos+l_i_i_MiddleNames])
-							pos += l_i_i_MiddleNames
-							p0i_i_MiddleNames = &vi_i_MiddleNames
+		{
+			var p0 ***[5]*string
+			var p1 **[5]*string
+			var p2 *[5]*string
+			if p++; data[p-1] != 0 {
+				if p++; data[p-1] != 0 {
+					if p++; data[p-1] != 0 {
+						vi_MiddleNames := [5]*string{}
+						for i_i_MiddleNames := 0; i_i_MiddleNames < 5; i_i_MiddleNames++ {
+							{
+								var p0 *string
+								if p++; data[p-1] != 0 {
+									l_i_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[p]))))
+									p += 8
+									vi_i_MiddleNames := string(data[p : p+l_i_i_MiddleNames])
+									p += l_i_i_MiddleNames
+									p0 = &vi_i_MiddleNames
+								}
+								vi_MiddleNames[i_i_MiddleNames] = p0
+							}
 						}
-						vi_MiddleNames[i_i_MiddleNames] = p0i_i_MiddleNames
+						p2 = &vi_MiddleNames
 					}
-					p2i_MiddleNames = &vi_MiddleNames
+					p1 = &p2
 				}
-				p1i_MiddleNames = &p2i_MiddleNames
+				p0 = &p1
 			}
-			p0i_MiddleNames = &p1i_MiddleNames
+			me.MiddleNames[i_MiddleNames] = p0
 		}
-		me.MiddleNames[i_MiddleNames] = p0i_MiddleNames
 	}
 
-	var p0LastName **string
-	var p1LastName *string
-	if pos++; data[pos-1] != 0 {
-		if pos++; data[pos-1] != 0 {
-			l_LastName := (*((*int)(unsafe.Pointer(&data[pos]))))
-			pos += 8
-			vLastName := string(data[pos : pos+l_LastName]) /*pos += l_LastName */
-			p1LastName = &vLastName
+	{
+		var p0 **string
+		var p1 *string
+		if p++; data[p-1] != 0 {
+			if p++; data[p-1] != 0 {
+				l_LastName := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				vLastName := string(data[p : p+l_LastName]) /* p += l_LastName */
+				p1 = &vLastName
+			}
+			p0 = &p1
 		}
-		p0LastName = &p1LastName
+		me.LastName = p0
 	}
-	me.LastName = p0LastName
 
 	return
 }

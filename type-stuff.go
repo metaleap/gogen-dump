@@ -175,7 +175,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	}
 	if tsyn := tSynonyms[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
-	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 || ustr.Idx(typeident, ']') >= 0 {
+	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
