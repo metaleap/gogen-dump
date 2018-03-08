@@ -38,7 +38,7 @@ type testStruct struct {
 		}
 		Foo [][2]map[rune]***[]*int16
 	}
-	Age ***uint
+	Age ****uint
 }
 
 type embName struct {

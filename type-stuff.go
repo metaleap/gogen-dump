@@ -175,7 +175,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	}
 	if tsyn := tSynonyms[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
-	} else if typeident[0] == '*' || ustr.Pref(typeident, "map[") || ustr.Pref(typeident, "[]") {
+	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 || ustr.Idx(typeident, ']') >= 0 {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
@@ -184,6 +184,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 				return mult * tdstd.fixedSize()
 			}
 		}
+		return -1
 	}
 	return 0
 }

@@ -121,8 +121,9 @@ type tmplDotField struct {
 	typeIdent   string
 	taggedUnion []string
 	skip        bool
-	fixedsize   int
 	isLast      bool
+
+	fixedsize int
 }
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
@@ -135,18 +136,7 @@ func (me *tmplDotField) finalTypeIdent() (typeident string) {
 
 func (me *tmplDotField) fixedSize() int {
 	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
-		me.fixedsize = -1
-		mult, tn := fixedSizeArrMult(me.typeIdent)
-		if tsyn, primsize := tSynonyms[tn], fixedSizeForTypeSpec(tn); primsize != 0 {
-			me.fixedsize = mult * primsize
-		} else {
-			for _, tdstd := range tdot.Structs {
-				if tdstd.TName == tsyn || tdstd.TName == tn {
-					me.fixedsize = mult * tdstd.fixedSize()
-					break
-				}
-			}
-		}
+		me.fixedsize = fixedSizeForTypeSpec(me.typeIdent)
 	}
 	return me.fixedsize
 }

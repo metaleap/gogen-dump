@@ -40,11 +40,11 @@ func main() {
 			// any flags?
 			for i, ditch := 0, false; i < len(typeNames); i++ {
 				switch typeNames[i] {
-				case "-safeVarints":
+				case "-safeVarints", "--safeVarints":
 					optSafeVarints, ditch = true, true
-				case "-varintsInFixedSizeds":
+				case "-varintsInFixedSizeds", "--varintsInFixedSizeds":
 					optVarintsInFixedSizeds, ditch = true, true
-				case "-ignoreUnknownTypeCases":
+				case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
 					optIgnoreUnknownTypeCases, ditch = true, true
 				}
 				if ditch {
