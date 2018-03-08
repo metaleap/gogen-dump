@@ -60,7 +60,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 		}
 	}
 	if numIndir > 0 {
-		mfr = "v" + nfr + ":"
+		mfr = "v" + strconv.Itoa(numIndir) + strconv.Itoa(iterDepth) + ":"
 		mfw = "(" + ustr.Times("*", numIndir) + mfw + ")"
 	} else if altNoMe == "" && tmpVarPref != "" {
 		mfr = tmpVarPref // + nfr
@@ -127,7 +127,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := numindir - 1; i >= 0; i-- {
 				if i == numindir-1 {
-					tmplR += " ; p" + strconv.Itoa(i) + " = &v" + nfr + " ; "
+					tmplR += " ; p" + strconv.Itoa(i) + " = &v" + strconv.Itoa(numindir) + strconv.Itoa(iterDepth) + " ; "
 				} else {
 					tmplR += " ; p" + strconv.Itoa(i) + " = &p" + strconv.Itoa(i+1) + " ; "
 				}
@@ -237,7 +237,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 					tmplR = mfr + "= " + typeName + "{} ; "
 				}
 				tmplR += genLenR(nfr) + " ; if err = " + ustr.TrimR(mfr, ":") + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
-				tmplW = "d_" + nfr + ", e_" + nfr + " := " + mfw + ".MarshalBinary() ; if err = e_" + nfr + "; err != nil { return } ; " + lf + " := " + cast + "(len(d_" + nfr + ")) ; " + genLenW(nfr) + " ; buf.Write(d_" + nfr + ")"
+				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
 				for tspec := range ts {
 					if tspec.Name.Name == typeName {
@@ -245,7 +245,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
 						}
-						tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf)"
+						tmplW = "{ if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf) }"
 						break
 					}
 				}

@@ -52,12 +52,14 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	var data bytes.Buffer
 
-	if err = me.embName.writeTo(&data); err != nil {
-		return
+	{
+		if err = me.embName.writeTo(&data); err != nil {
+			return
+		}
+		l_embName := (data.Len())
+		buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:])
+		data.WriteTo(buf)
 	}
-	l_embName := (data.Len())
-	buf.Write((*[8]byte)(unsafe.Pointer(&l_embName))[:])
-	data.WriteTo(buf)
 
 	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.DingDong.Complex))))[:])
 
@@ -128,24 +130,28 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 					buf.WriteByte(0)
 				} else {
 					buf.WriteByte(1)
-					if err = t.writeTo(&data); err != nil {
-						return
+					{
+						if err = t.writeTo(&data); err != nil {
+							return
+						}
+						l_m0 := (data.Len())
+						buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
+						data.WriteTo(buf)
 					}
-					l_m0 := (data.Len())
-					buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
-					data.WriteTo(buf)
 				}
 			case []embName:
 				buf.WriteByte(6)
 				l_m0 := (len(t))
 				buf.Write((*[8]byte)(unsafe.Pointer(&l_m0))[:])
 				for i_m0 := 0; i_m0 < (l_m0); i_m0++ {
-					if err = t[i_m0].writeTo(&data); err != nil {
-						return
+					{
+						if err = t[i_m0].writeTo(&data); err != nil {
+							return
+						}
+						l_i_m0 := (data.Len())
+						buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
+						data.WriteTo(buf)
 					}
-					l_i_m0 := (data.Len())
-					buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
-					data.WriteTo(buf)
 				}
 			case []*embName:
 				buf.WriteByte(7)
@@ -156,12 +162,14 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 						buf.WriteByte(0)
 					} else {
 						buf.WriteByte(1)
-						if err = t[i_m0].writeTo(&data); err != nil {
-							return
+						{
+							if err = t[i_m0].writeTo(&data); err != nil {
+								return
+							}
+							l_i_m0 := (data.Len())
+							buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
+							data.WriteTo(buf)
 						}
-						l_i_m0 := (data.Len())
-						buf.Write((*[8]byte)(unsafe.Pointer(&l_i_m0))[:])
-						data.WriteTo(buf)
 					}
 				}
 			case []*float32:
@@ -290,23 +298,23 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	{
 		var p0 *[3]**int16
 		if p++; data[p-1] != 0 {
-			vHmꓸBalance := [3]**int16{}
+			v10 := [3]**int16{}
 			for i_HmꓸBalance := 0; i_HmꓸBalance < 3; i_HmꓸBalance++ {
 				{
 					var p0 **int16
 					var p1 *int16
 					if p++; data[p-1] != 0 {
 						if p++; data[p-1] != 0 {
-							vi_HmꓸBalance := *((*int16)(unsafe.Pointer(&data[p])))
+							v21 := *((*int16)(unsafe.Pointer(&data[p])))
 							p += 2
-							p1 = &vi_HmꓸBalance
+							p1 = &v21
 						}
 						p0 = &p1
 					}
-					vHmꓸBalance[i_HmꓸBalance] = p0
+					v10[i_HmꓸBalance] = p0
 				}
 			}
-			p0 = &vHmꓸBalance
+			p0 = &v10
 		}
 		me.Hm.Balance = p0
 	}
@@ -331,9 +339,9 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 		{
 			var p0 *fixed
 			if p++; data[p-1] != 0 {
-				vk0 := *((*fixed)(unsafe.Pointer(&data[p])))
+				v11 := *((*fixed)(unsafe.Pointer(&data[p])))
 				p += 2036
-				p0 = &vk0
+				p0 = &v11
 			}
 			bk0 = p0
 		}
@@ -351,9 +359,9 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 				{
 					var p0 *fixed
 					if p++; data[p-1] != 0 {
-						vm0 := *((*fixed)(unsafe.Pointer(&data[p])))
+						v11 := *((*fixed)(unsafe.Pointer(&data[p])))
 						p += 2036
-						p0 = &vm0
+						p0 = &v11
 					}
 					u = p0
 				}
@@ -378,14 +386,14 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 				{
 					var p0 *embName
 					if p++; data[p-1] != 0 {
-						vm0 := embName{}
+						v11 := embName{}
 						l_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
 						p += 8
-						if err = vm0.UnmarshalBinary(data[p : p+l_m0]); err != nil {
+						if err = v11.UnmarshalBinary(data[p : p+l_m0]); err != nil {
 							return
 						}
 						p += l_m0
-						p0 = &vm0
+						p0 = &v11
 					}
 					u = p0
 				}
@@ -413,14 +421,14 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 					{
 						var p0 *embName
 						if p++; data[p-1] != 0 {
-							vi_m0 := embName{}
+							v12 := embName{}
 							l_i_m0 := (*((*int)(unsafe.Pointer(&data[p]))))
 							p += 8
-							if err = vi_m0.UnmarshalBinary(data[p : p+l_i_m0]); err != nil {
+							if err = v12.UnmarshalBinary(data[p : p+l_i_m0]); err != nil {
 								return
 							}
 							p += l_i_m0
-							p0 = &vi_m0
+							p0 = &v12
 						}
 						u[i_m0] = p0
 					}
@@ -435,9 +443,9 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 					{
 						var p0 *float32
 						if p++; data[p-1] != 0 {
-							vi_m0 := *((*float32)(unsafe.Pointer(&data[p])))
+							v12 := *((*float32)(unsafe.Pointer(&data[p])))
 							p += 4
-							p0 = &vi_m0
+							p0 = &v12
 						}
 						u[i_m0] = p0
 					}
@@ -472,19 +480,19 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 							if p++; data[p-1] != 0 {
 								l_m2 := (*((*int)(unsafe.Pointer(&data[p]))))
 								p += 8
-								vm2 := make([]*int16, l_m2)
+								v33 := make([]*int16, l_m2)
 								for i_m2 := 0; i_m2 < (l_m2); i_m2++ {
 									{
 										var p0 *int16
 										if p++; data[p-1] != 0 {
-											vi_m2 := *((*int16)(unsafe.Pointer(&data[p])))
+											v14 := *((*int16)(unsafe.Pointer(&data[p])))
 											p += 2
-											p0 = &vi_m2
+											p0 = &v14
 										}
-										vm2[i_m2] = p0
+										v33[i_m2] = p0
 									}
 								}
-								p2 = &vm2
+								p2 = &v33
 							}
 							p1 = &p2
 						}
@@ -506,8 +514,8 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				if p++; data[p-1] != 0 {
 					if p++; data[p-1] != 0 {
-						vAge := *((*uint)(unsafe.Pointer(&data[p]))) /* p += 8 */
-						p3 = &vAge
+						v40 := *((*uint)(unsafe.Pointer(&data[p]))) /* p += 8 */
+						p3 = &v40
 					}
 					p2 = &p3
 				}
@@ -623,21 +631,21 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				if p++; data[p-1] != 0 {
 					if p++; data[p-1] != 0 {
-						vi_MiddleNames := [5]*string{}
+						v31 := [5]*string{}
 						for i_i_MiddleNames := 0; i_i_MiddleNames < 5; i_i_MiddleNames++ {
 							{
 								var p0 *string
 								if p++; data[p-1] != 0 {
 									l_i_i_MiddleNames := (*((*int)(unsafe.Pointer(&data[p]))))
 									p += 8
-									vi_i_MiddleNames := string(data[p : p+l_i_i_MiddleNames])
+									v12 := string(data[p : p+l_i_i_MiddleNames])
 									p += l_i_i_MiddleNames
-									p0 = &vi_i_MiddleNames
+									p0 = &v12
 								}
-								vi_MiddleNames[i_i_MiddleNames] = p0
+								v31[i_i_MiddleNames] = p0
 							}
 						}
-						p2 = &vi_MiddleNames
+						p2 = &v31
 					}
 					p1 = &p2
 				}
@@ -654,8 +662,8 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				l_LastName := (*((*int)(unsafe.Pointer(&data[p]))))
 				p += 8
-				vLastName := string(data[p : p+l_LastName]) /* p += l_LastName */
-				p1 = &vLastName
+				v20 := string(data[p : p+l_LastName]) /* p += l_LastName */
+				p1 = &v20
 			}
 			p0 = &p1
 		}
