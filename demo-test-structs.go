@@ -39,7 +39,7 @@ type testStruct struct {
 			AccountAge int
 			Lookie     [2]fixed
 			HowLong    time.Duration `gogen-dump:"-"`
-			When       time.Time
+			When       []time.Time
 			Any        map[*fixed]iface1 `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16

@@ -144,6 +144,13 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				if slen = "(" + lf + ")"; optSafeVarints {
 					slen = "int" + slen
 				}
+				if pkgname, _ := ustr.BreakOnFirstOrSuff(typeName[pclose+1:], "."); pkgname != "" {
+					tdot.Imps[pkgname].Used = true
+				} else if ismap {
+					if pkgname, _ = ustr.BreakOnFirstOrSuff(typeName[4:pclose], "."); pkgname != "" {
+						tdot.Imps[pkgname].Used = true
+					}
+				}
 				tmplR += genLenR(nfr) + " ; " + mfr + "= make(" + typeName + ", " + lf + ") ; "
 				tmplW += lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; "
 			} else {
@@ -211,7 +218,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 			if optIgnoreUnknownTypeCases {
 				tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
 			} else {
-				tdot.Imps["fmt"] = "fmt"
+				tdot.Imps["fmt"] = &tmplDotPkgImp{ImportPath: "fmt", Used: true}
 				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\treturn fmt.Errorf(\"" + tdstd.TName + "." + ustr.Until(ustr.TrimPref(altNoMe, "me."), "[") + ": type %T not mentioned in tagged-union field-tag\", t" + ")"
 			}
 			tmplR += "\n\t}}"

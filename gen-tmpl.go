@@ -15,9 +15,8 @@ import (
 	"bytes"
 	"io"
 	"unsafe"
-	{{range $pkgname, $pkgimppath := .Imps}}
-	{{ $pkgname }} "{{$pkgimppath}}"
-	{{- end}}
+	{{range $pkgname, $pkg := .Imps}}{{if $pkg.Used}}
+		{{ $pkgname }} "{{$pkg.ImportPath}}"{{end}}{{end}}
 )
 
 {{range .Structs}}
@@ -77,9 +76,14 @@ type tmplDotFile struct {
 	ProgHint string
 	PName    string
 	Structs  []*tmplDotStructTypeDef
-	Imps     map[string]string
+	Imps     map[string]*tmplDotPkgImp
 
 	allStructTypeDefsCollected bool
+}
+
+type tmplDotPkgImp struct {
+	ImportPath string
+	Used       bool
 }
 
 type tmplDotStructTypeDef struct {

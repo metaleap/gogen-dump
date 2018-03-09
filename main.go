@@ -13,7 +13,7 @@ import (
 
 var (
 	genFileName  = "@serializers.gen.go"
-	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]string{}}
+	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
 	goPkgDirPath = tdot.ProgHint
 	typeNames    = []string{"fixed", "testStruct", "embName", "thisDoesntExist", "time.Duration", "time.Time"}
 	ts           = map[*ast.TypeSpec]*ast.StructType{}

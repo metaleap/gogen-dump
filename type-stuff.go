@@ -101,14 +101,16 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 
 	} else if sel, _ := t.(*ast.SelectorExpr); sel != nil {
 		pkgname := sel.X.(*ast.Ident).Name
-		tdot.Imps[pkgname] = pkgname
-		if udevgo.PkgsByImP == nil {
-			if err := udevgo.RefreshPkgs(); err != nil {
-				panic(err)
+		if tdot.Imps[pkgname] == nil {
+			tdot.Imps[pkgname] = &tmplDotPkgImp{ImportPath: pkgname}
+			if udevgo.PkgsByImP == nil {
+				if err := udevgo.RefreshPkgs(); err != nil {
+					panic(err)
+				}
 			}
-		}
-		if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
-			tdot.Imps[pkgname] = pkgimppath
+			if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
+				tdot.Imps[pkgname].ImportPath = pkgimppath
+			}
 		}
 		return pkgname + "." + sel.Sel.Name, -1
 
