@@ -58,7 +58,7 @@ So by and large, use-cases are limited to scenarios such as:
 - fields to in-package type synomyns and type aliases handled as described above+below
 - interface-typed fields denoted as unions/sums via a *Go struct-field tag* such as
 
-        myField my.Iface `gogen-dump:"bool []byte somePkg.otherType *orAnotherType"`
+        myField my.Iface `ggd:"bool []byte somePkg.otherType *orAnotherType"`
 
     (only concrete types should be named in there: no further interfaces; maximum of 255 entries; also works equivalently for slice/array/pointer/map(value)-of-interface-type fields/values or same-package type aliases/synonyms of such)
 - fields to directly included (but not referenced via pointer/slice/etc.) 'inline' in-struct 'anonymous' sub-structs to arbitrary nesting depths
