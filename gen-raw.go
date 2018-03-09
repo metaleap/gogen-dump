@@ -152,7 +152,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 				}
 				arrfixedsize = fixedSizeForTypeSpec(typeName)
 			}
-			valtypespec, idx := typeName[pclose+1:], ustr.Times("i" /*iterDepth+*/, 1)+"_"+nfr
+			valtypespec, idx := typeName[pclose+1:], "i"+strconv.Itoa(iterDepth)
 
 			if ismap {
 				mk, mv := "k"+strconv.Itoa(iterDepth), "m"+strconv.Itoa(iterDepth)
