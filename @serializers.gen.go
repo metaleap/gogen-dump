@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	fmt "fmt"
+	// time "time"
 )
 
 func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
@@ -84,10 +85,16 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.Hm.Hm.AccountAge))))[:])
 
-	lHmHmLookie := (len(me.Hm.Hm.Lookie))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lHmHmLookie))[:])
-	if (lHmHmLookie) > 0 {
-		buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Lookie[0]))[:2036*(lHmHmLookie)])
+	buf.Write(((*[4072]byte)(unsafe.Pointer(&(me.Hm.Hm.Lookie[0]))))[:])
+
+	{
+		d, e := me.Hm.Hm.When.MarshalBinary()
+		if err = e; err != nil {
+			return
+		}
+		lHmHmWhen := (len(d))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lHmHmWhen))[:])
+		buf.Write(d)
 	}
 
 	lHmHmAny := (len(me.Hm.Hm.Any))
@@ -314,13 +321,15 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	me.Hm.Hm.AccountAge = *((*int)(unsafe.Pointer(&data[p])))
 	p += 8
 
-	lHmHmLookie := (*((*int)(unsafe.Pointer(&data[p]))))
+	me.Hm.Hm.Lookie = *((*[2]fixed)(unsafe.Pointer(&data[p])))
+	p += 4072
+
+	lHmHmWhen := (*((*int)(unsafe.Pointer(&data[p]))))
 	p += 8
-	me.Hm.Hm.Lookie = make([]fixed, lHmHmLookie)
-	if (lHmHmLookie) > 0 {
-		copy(((*[1125899906842623]byte)(unsafe.Pointer(&me.Hm.Hm.Lookie[0])))[0:2036*(lHmHmLookie)], data[p:p+(2036*(lHmHmLookie))])
-		p += (2036 * (lHmHmLookie))
+	if err = me.Hm.Hm.When.UnmarshalBinary(data[p : p+lHmHmWhen]); err != nil {
+		return
 	}
+	p += lHmHmWhen
 
 	lHmHmAny := (*((*int)(unsafe.Pointer(&data[p]))))
 	p += 8

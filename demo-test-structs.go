@@ -1,5 +1,9 @@
 package main
 
+import (
+	"time"
+)
+
 type iface1 interface{}
 
 type iface2 = interface{}
@@ -33,7 +37,9 @@ type testStruct struct {
 		Balance *[3]**int16
 		Hm      struct {
 			AccountAge int
-			Lookie     []fixed
+			Lookie     [2]fixed
+			HowLong    time.Duration `gogen-dump:"-"`
+			When       time.Time
 			Any        map[*fixed]iface1 `gogen-dump:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 		}
 		Foo [][2]map[rune]***[]*int16

@@ -15,7 +15,7 @@ var (
 	genFileName  = "@serializers.gen.go"
 	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]string{}}
 	goPkgDirPath = tdot.ProgHint
-	typeNames    = []string{"fixed", "testStruct", "embName"}
+	typeNames    = []string{"fixed", "testStruct", "embName", "thisDoesntExist", "time.Duration", "time.Time"}
 	ts           = map[*ast.TypeSpec]*ast.StructType{}
 	tSynonyms    = map[string]string{}
 
