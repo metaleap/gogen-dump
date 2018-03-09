@@ -250,7 +250,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tdstd *tmpl
 							mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
 						}
 						tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf)"
-						return
+						break
 					}
 				}
 			}

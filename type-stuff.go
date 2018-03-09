@@ -204,9 +204,7 @@ func finalElemTypeSpec(typeSpec string) string {
 	if typeSpec != "" {
 		if typeSpec[0] == '*' {
 			return finalElemTypeSpec(ustr.TrimL(typeSpec, "*"))
-		} else if pclose := ustr.Idx(typeSpec, ']'); typeSpec[0] == '[' && pclose > 0 {
-			return finalElemTypeSpec(typeSpec[pclose+1:])
-		} else if ustr.Pref(typeSpec, "map[") {
+		} else if pclose := ustr.Idx(typeSpec, ']'); pclose > 0 && (typeSpec[0] == '[' || ustr.Pref(typeSpec, "map[")) {
 			return finalElemTypeSpec(typeSpec[pclose+1:])
 		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
 			return finalElemTypeSpec(tsyn)
