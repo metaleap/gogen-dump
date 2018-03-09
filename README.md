@@ -73,4 +73,5 @@ So by and large, use-cases are limited to scenarios such as:
 - `-sql.IsolationLevel=int`, `-os.FileMode=uint32`, `-sort.StringSlice=[]string`, etc. — declares as a type synonym/alias the specified type used in but not defined in the current package, to generate low-level (de)serialization code for fields/elements of such types that represent prim-types (and often do not implement `encoding.BinaryMarshaler` / `encoding.BinaryUnmarshaler`).
   - For convenience, `-time.Duration=int64` is already always implicitly present and does not need to be expressly specified.
   - Reminder that in-package type aliases / synonyms will be picked up automatically and need not be expressly specified.
+  - An alternative to type-aliasing via command-line flags is a `ggd:"underlyingtypename"` struct-field-tag next to the 'offender' in your source `struct`(s). It only needs to exist once, not for every single applicable field.
 - all flags can be included via both `-` and `--`
