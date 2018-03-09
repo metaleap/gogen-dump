@@ -193,6 +193,14 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 		}
 	}
 
+	lHmHmCrikey := (len(me.Hm.Hm.Crikey))
+	buf.Write((*[8]byte)(unsafe.Pointer(&lHmHmCrikey))[:])
+	for i0 := 0; i0 < (lHmHmCrikey); i0++ {
+		li0 := (len(me.Hm.Hm.Crikey[i0]))
+		buf.Write((*[8]byte)(unsafe.Pointer(&li0))[:])
+		buf.WriteString(me.Hm.Hm.Crikey[i0])
+	}
+
 	lHmFoo := (len(me.Hm.Foo))
 	buf.Write((*[8]byte)(unsafe.Pointer(&lHmFoo))[:])
 	for i0 := 0; i0 < (lHmFoo); i0++ {
@@ -462,6 +470,16 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 			}
 		}
 		me.Hm.Hm.Any[bk0] = bm0
+	}
+
+	lHmHmCrikey := (*((*int)(unsafe.Pointer(&data[p]))))
+	p += 8
+	me.Hm.Hm.Crikey = make([]string, lHmHmCrikey)
+	for i0 := 0; i0 < (lHmHmCrikey); i0++ {
+		li0 := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Hm.Hm.Crikey[i0] = string(data[p : p+li0])
+		p += li0
 	}
 
 	lHmFoo := (*((*int)(unsafe.Pointer(&data[p]))))

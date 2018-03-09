@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"time"
 )
 
@@ -38,9 +39,10 @@ type testStruct struct {
 		Hm      struct {
 			AccountAge int
 			Lookie     [2]fixed
-			HowLong    [3]time.Duration // `ggd:"int64"`
+			HowLong    [3]time.Duration
 			When       time.Time
 			Any        map[*fixed]iface1 `ggd:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
+			Crikey     sort.StringSlice  `ggd:"[]string"`
 		}
 		Foo [][2]map[rune]***[]*int16
 	}

@@ -23,7 +23,7 @@ func collectTypes() {
 	for _, tdstd := range tdot.Structs {
 		for _, tdf := range tdstd.Fields {
 			if len(tdf.taggedUnion) == 1 {
-				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), finalElemTypeSpec(tdf.taggedUnion[0]); tsyn != tref && tsyn != "" && tref != "" {
+				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn != tref && tsyn != "" && tref != "" {
 					tSynonyms[tsyn] = tref
 					tdf.taggedUnion = nil
 				}
