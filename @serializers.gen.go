@@ -87,18 +87,16 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write(((*[4072]byte)(unsafe.Pointer(&(me.Hm.Hm.Lookie[0]))))[:])
 
-	lHmHmWhen := (len(me.Hm.Hm.When))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lHmHmWhen))[:])
-	for i0 := 0; i0 < (lHmHmWhen); i0++ {
-		{
-			d, e := me.Hm.Hm.When[i0].MarshalBinary()
-			if err = e; err != nil {
-				return
-			}
-			li0 := (len(d))
-			buf.Write((*[8]byte)(unsafe.Pointer(&li0))[:])
-			buf.Write(d)
+	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.Hm.Hm.HowLong[0]))))[:])
+
+	{
+		d, e := me.Hm.Hm.When.MarshalBinary()
+		if err = e; err != nil {
+			return
 		}
+		lHmHmWhen := (len(d))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lHmHmWhen))[:])
+		buf.Write(d)
 	}
 
 	lHmHmAny := (len(me.Hm.Hm.Any))
@@ -328,17 +326,15 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	me.Hm.Hm.Lookie = *((*[2]fixed)(unsafe.Pointer(&data[p])))
 	p += 4072
 
+	me.Hm.Hm.HowLong = *((*[3]time.Duration)(unsafe.Pointer(&data[p])))
+	p += 24
+
 	lHmHmWhen := (*((*int)(unsafe.Pointer(&data[p]))))
 	p += 8
-	me.Hm.Hm.When = make([]time.Time, lHmHmWhen)
-	for i0 := 0; i0 < (lHmHmWhen); i0++ {
-		li0 := (*((*int)(unsafe.Pointer(&data[p]))))
-		p += 8
-		if err = me.Hm.Hm.When[i0].UnmarshalBinary(data[p : p+li0]); err != nil {
-			return
-		}
-		p += li0
+	if err = me.Hm.Hm.When.UnmarshalBinary(data[p : p+lHmHmWhen]); err != nil {
+		return
 	}
+	p += lHmHmWhen
 
 	lHmHmAny := (*((*int)(unsafe.Pointer(&data[p]))))
 	p += 8

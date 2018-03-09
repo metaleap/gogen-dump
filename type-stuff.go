@@ -20,6 +20,16 @@ func collectTypes() {
 			tdot.Structs = append(tdot.Structs, tdstd)
 		}
 	}
+	for _, tdstd := range tdot.Structs {
+		for _, tdf := range tdstd.Fields {
+			if len(tdf.taggedUnion) == 1 {
+				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), finalElemTypeSpec(tdf.taggedUnion[0]); tsyn != tref && tsyn != "" && tref != "" {
+					tSynonyms[tsyn] = tref
+					tdf.taggedUnion = nil
+				}
+			}
+		}
+	}
 }
 
 func collectFields(st *ast.StructType) (fields []*tmplDotField) {
@@ -37,13 +47,12 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 		} else {
 			panic(l)
 		}
-		if fld.Tag != nil {
-			if pos := ustr.Pos(fld.Tag.Value, "gogen-dump:\""); pos >= 0 {
-				tagval := fld.Tag.Value[pos+12:]
-				tagval = tagval[:ustr.Pos(tagval, "\"")]
-				if tagval == "-" {
+		if tagpref := "ggd:\""; fld.Tag != nil {
+			if pos := ustr.Pos(fld.Tag.Value, tagpref); pos >= 0 {
+				tagval := fld.Tag.Value[pos+len(tagpref):]
+				if tagval = ustr.Trim(tagval[:ustr.Pos(tagval, "\"")]); tagval == "-" {
 					tdf.skip = true
-				} else if tdf.taggedUnion = ustr.Split(tagval, " "); len(tdf.taggedUnion) > 255 {
+				} else if tdf.taggedUnion = ustr.Sans(ustr.Map(ustr.Split(tagval, " "), ustr.Trim), " "); len(tdf.taggedUnion) > 255 {
 					panic(tdf.FName + ": too many case alternatives for serializable .(type) switch (maximum is 255)")
 				}
 			}
@@ -189,6 +198,40 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 		return -1
 	}
 	return 0
+}
+
+func finalElemTypeSpec(typeSpec string) string {
+	if typeSpec != "" {
+		if typeSpec[0] == '*' {
+			return finalElemTypeSpec(ustr.TrimL(typeSpec, "*"))
+		} else if pclose := ustr.Idx(typeSpec, ']'); typeSpec[0] == '[' && pclose > 0 {
+			return finalElemTypeSpec(typeSpec[pclose+1:])
+		} else if ustr.Pref(typeSpec, "map[") {
+			return finalElemTypeSpec(typeSpec[pclose+1:])
+		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
+			return finalElemTypeSpec(tsyn)
+		}
+	}
+	return typeSpec
+}
+
+func ensureImportFor(typeSpec string) (pkgName []string) {
+	if typeSpec != "" {
+		if typeSpec[0] == '*' {
+			return ensureImportFor(ustr.TrimL(typeSpec, "*"))
+		} else if pclose := ustr.Idx(typeSpec, ']'); typeSpec[0] == '[' && pclose > 0 {
+			return ensureImportFor(typeSpec[pclose+1:])
+		} else if ustr.Pref(typeSpec, "map[") {
+			return append(ensureImportFor(typeSpec[pclose+1:]),
+				ensureImportFor(typeSpec[4:pclose])...)
+		} else if i := ustr.Idx(typeSpec, '.'); i > 0 {
+			tdot.Imps[typeSpec[:i]].Used = true
+			return []string{typeSpec[:i]}
+		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
+			return ensureImportFor(tsyn)
+		}
+	}
+	return nil
 }
 
 // // nicked from teh_cmc/gools/zerocopy:

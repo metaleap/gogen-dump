@@ -17,7 +17,9 @@ var (
 	goPkgDirPath = tdot.ProgHint
 	typeNames    = []string{"fixed", "testStruct", "embName", "thisDoesntExist", "time.Duration", "time.Time"}
 	ts           = map[*ast.TypeSpec]*ast.StructType{}
-	tSynonyms    = map[string]string{}
+	tSynonyms    = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
+		"time.Duration": "int64",
+	}
 
 	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream.
 	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
@@ -39,16 +41,22 @@ func main() {
 
 			// any flags?
 			for i, ditch := 0, false; i < len(typeNames); i++ {
-				switch typeNames[i] {
-				case "-safeVarints", "--safeVarints":
-					optSafeVarints, ditch = true, true
-				case "-varintsInFixedSizeds", "--varintsInFixedSizeds":
-					optVarintsInFixedSizeds, ditch = true, true
-				case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
-					optIgnoreUnknownTypeCases, ditch = true, true
+				if tn := typeNames[i]; tn[0] == '-' && len(tn) > 1 {
+					switch tn {
+					case "-safeVarints", "--safeVarints":
+						optSafeVarints, ditch = true, true
+					case "-varintsInFixedSizeds", "--varintsInFixedSizeds":
+						optVarintsInFixedSizeds, ditch = true, true
+					case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
+						optIgnoreUnknownTypeCases, ditch = true, true
+					default:
+						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.TrimL(tn, "-"), "="); tsyn != "" && tref != "" {
+							ditch, tSynonyms[tsyn] = true, tref
+						}
+					}
 				}
 				if ditch {
-					typeNames = append(typeNames[:i], typeNames[i+1:]...)
+					ditch, typeNames = false, append(typeNames[:i], typeNames[i+1:]...)
 				}
 			}
 		}
@@ -68,6 +76,9 @@ func main() {
 		}
 		return true
 	})
+	if len(gofilepaths) == 0 {
+		panic("no .go files found in: " + goPkgDirPath)
+	}
 
 	goast := loader.Config{Cwd: goPkgDirPath}
 	goast.CreateFromFilenames(goPkgImpPath, gofilepaths...)
