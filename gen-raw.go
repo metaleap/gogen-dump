@@ -17,35 +17,36 @@ func genDump() {
 		} else {
 			for i := 0; i < len(tdt.Fields); i++ {
 				tdf := tdt.Fields[i]
-				if fse := strconv.Itoa(tdf.fixedsizeExt); tdf.fixedsizeExtNumSkip > 0 {
-					addr := "&me." + tdf.FName
-					if tdf.typeIdent[0] == '[' {
+				oneop := tdf.fixedsizeExtNumSkip > 0
+				if oneop {
+					addr, fse := "&me."+tdf.FName, strconv.Itoa(tdf.fixedsizeExt)
+					if i += tdf.fixedsizeExtNumSkip; tdf.typeIdent[0] == '[' {
 						addr += "[0]"
 					}
 					tdf.TmplW = "buf.Write( (*[" + fse + "]byte)(unsafe.Pointer(" + addr + ")) [:] )"
 					tdf.TmplR = "*( (*[" + fse + "]byte)(unsafe.Pointer(" + addr + ")) ) = *( (*[" + fse + "]byte)(unsafe.Pointer(&data[p])) ) ; p += " + fse + " "
-					i += tdf.fixedsizeExtNumSkip
 				} else {
 					tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, "", 0, 0, tdf.taggedUnion)
 				}
-				// if tdf.isLast && !ustr.Has(tdf.finalTypeIdent(), "[") { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to p
-				// 	lastp, lastpalt := ustr.Last(tdf.TmplR, " p++ "), ustr.Last(tdf.TmplR, " p +=")
-				// 	if lastpalt > lastp {
-				// 		lastp = lastpalt
-				// 	}
-				// 	if lastp > 0 {
-				// 		off, offalt, offnope := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n"), ustr.Pos(tdf.TmplR[lastp:], "}")
-				// 		if offalt > 0 && offalt < off {
-				// 			off = offalt
-				// 		}
-				// 		if off < 0 {
-				// 			off = len(tdf.TmplR) - lastp
-				// 		}
-				// 		if offnope < 0 || offnope > off {
-				// 			tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
-				// 		}
-				// 	}
-				// }
+
+				if tdf.isLast && (oneop || !ustr.Has(tdf.finalTypeIdent(), "[")) { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to p
+					lastp, lastpalt := ustr.Last(tdf.TmplR, " p++ "), ustr.Last(tdf.TmplR, " p +=")
+					if lastpalt > lastp {
+						lastp = lastpalt
+					}
+					if lastp > 0 {
+						off, offalt, offnope := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n"), ustr.Pos(tdf.TmplR[lastp:], "}")
+						if offalt > 0 && offalt < off {
+							off = offalt
+						}
+						if off < 0 {
+							off = len(tdf.TmplR) - lastp
+						}
+						if offnope < 0 || offnope > off {
+							tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
+						}
+					}
+				}
 			}
 		}
 	}

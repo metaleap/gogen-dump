@@ -527,8 +527,7 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				if p++; data[p-1] != 0 {
 					if p++; data[p-1] != 0 {
-						v40 := *((*uint)(unsafe.Pointer(&data[p])))
-						p += 8
+						v40 := *((*uint)(unsafe.Pointer(&data[p]))) /* p += 8 */
 						p30 = &v40
 					}
 					p20 = &p30
@@ -676,8 +675,7 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				lLastName := (*((*int)(unsafe.Pointer(&data[p]))))
 				p += 8
-				v20 := string(data[p : p+lLastName])
-				p += lLastName
+				v20 := string(data[p : p+lLastName]) /* p += lLastName */
 				p10 = &v20
 			}
 			p00 = &p10
