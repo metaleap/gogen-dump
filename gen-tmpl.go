@@ -21,7 +21,7 @@ import (
 )
 
 {{range .Structs}}
-func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
+func (me *{{.TName}}) marshalTo(buf *bytes.Buffer) (err error) {
 	{{if .TmplW}}
 	{{.TmplW}}
 	{{else}}
@@ -35,17 +35,9 @@ func (me *{{.TName}}) writeTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
-func (me *{{.TName}}) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
 func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
+	buf := bytes.NewBuffer(make([]byte, 0, {{.InitialBufSize}}))
+	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
 	return
@@ -70,6 +62,14 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	{{end}}
 	return
 }
+
+func (me *{{.TName}}) WriteTo(w io.Writer) (int64, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, {{.InitialBufSize}}))
+	if err := me.marshalTo(buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
 {{end}}
 `
 
@@ -92,13 +92,14 @@ type tmplDotPkgImp struct {
 }
 
 type tmplDotStruct struct {
-	TName    string
-	Fields   []*tmplDotField
-	HasWData bool
-	HasB0Ptr bool
-	HasB1Ptr bool
-	TmplR    string // only if fixedSize() > 0
-	TmplW    string // only if fixedSize() > 0
+	TName          string
+	Fields         []*tmplDotField
+	HasB0Ptr       bool
+	HasB1Ptr       bool
+	HasWData       bool
+	TmplR          string // only if fixedSize() > 0
+	TmplW          string // only if fixedSize() > 0
+	InitialBufSize string
 
 	fixedsize int
 }
@@ -122,6 +123,20 @@ func (me *tmplDotStruct) fixedSize() int {
 	return me.fixedsize
 }
 
+func (me *tmplDotStruct) ensureSizeHeur() {
+	if me.InitialBufSize == "" {
+		if fs := me.fixedSize(); fs > 0 {
+			me.InitialBufSize = s(fs)
+		} else {
+			for _, tdf := range me.Fields {
+				me.InitialBufSize += "+(" + tdf.sizeHeur() + ")"
+			}
+			me.InitialBufSize = me.InitialBufSize[1:]
+		}
+	}
+	return
+}
+
 type tmplDotField struct {
 	FName string
 	TmplW string
@@ -136,6 +151,7 @@ type tmplDotField struct {
 	fixedsize           int
 	fixedsizeExt        int
 	fixedsizeExtNumSkip int
+	sizeheur            string
 }
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
@@ -151,6 +167,36 @@ func (me *tmplDotField) fixedSize() int {
 		me.fixedsize = fixedSizeForTypeSpec(me.typeIdent)
 	}
 	return me.fixedsize
+}
+
+func (me *tmplDotField) sizeHeur() string {
+	if me.sizeheur == "" {
+		me.sizeheur = "0"
+		if fs := me.fixedSize(); fs > 0 {
+			me.sizeheur = s(fs)
+		}
+		/*
+			mult, tident := fixedSizeArrMult(typeIdent)
+			if tident[0] == '*' {
+				heur = mult * (1 + genSizeHeuristic(tident[1:]))
+			} else if (tident[0] == '[' && tident[1] == ']') || (typeIdent[0] == '[' && typeIdent[1] == ']') {
+				heur = mult * (8 + genSizeHeuristic(tident[2:]))
+			} else if ustr.Pref(tident, "map[") {
+				heur = mult * (8 + genSizeHeuristic(""))
+			} else if tident == "string" {
+				heur = mult * (8 + 33)
+			} else if tident == "int" || tident == "uint" || tident == "uintptr" {
+				heur = mult * 8
+			} else {
+				for _, tdt := range tdot.Structs {
+					if tdt.TName == tident {
+						break
+					}
+				}
+			}
+		*/
+	}
+	return me.sizeheur
 }
 
 func genViaTmpl() (src []byte, err error) {

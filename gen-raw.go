@@ -54,6 +54,7 @@ func genDump() {
 				}
 			}
 		}
+		tdt.ensureSizeHeur()
 	}
 
 	filePathDst := filepath.Join(goPkgDirPath, genFileName)
@@ -71,7 +72,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 	nf, mfw, mfr, lf, nfr := fieldName, "me."+fieldName, "me."+fieldName, "l"+ustr.Replace(fieldName, ".", ""), ustr.Replace(fieldName, ".", "")
 	if altNoMe != "" {
 		if mfw = altNoMe; iterDepth > 0 {
-			if mfr = ustr.TrimR(altNoMe, ":"); !ustr.Suff(mfr, "["+nf+"]") {
+			if mfr = ustr.Drop(altNoMe, ':'); !ustr.Suff(mfr, "["+nf+"]") {
 				mfr += "[" + nf + "]"
 			}
 		}
@@ -123,19 +124,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		if typeName[0] == '*' {
 			// POINTER
 
-			tmplR = "{ "
-			var numindir int
-			for _, r := range typeName {
-				if r == '*' {
-					numindir++
-				} else {
-					break
-				}
-			}
+			numindir := len(typeName) - len(ustr.Skip(typeName, '*'))
 			tn := typeName[numindir:]
 			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, "", numindir, iterDepth, taggedUnion)
+			tmplR = "{ "
 			for i := 0; i < numindir; i++ {
-				tmplR += " ; var p" + s(i) + s(iterDepth) + " " + ustr.Times("*", numindir-i) + tn + " ; "
+				tmplR += " var p" + s(i) + s(iterDepth) + " " + ustr.Times("*", numindir-i) + tn + " ; "
 			}
 			for i := 0; i < numindir; i++ {
 				tmplR += "if p++; data[p-1] != 0 { "
@@ -259,7 +253,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					ensureImportFor(typeName)
 					tmplR = mfr + "= " + typeName + "{} ; "
 				}
-				tmplR += genLenR(nfr) + " ; if err = " + ustr.TrimR(mfr, ":") + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
+				tmplR += genLenR(nfr) + " ; if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
 				for tspec := range ts {
@@ -268,7 +262,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
 						}
-						tmplW = "if err = " + mfw + ".writeTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf)"
+						tmplW = "if err = " + mfw + ".marshalTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf)"
 						break
 					}
 				}

@@ -15,7 +15,7 @@ import (
 	fmt "fmt"
 )
 
-func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
+func (me *embName) marshalTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write(((*[24432]byte)(unsafe.Pointer(&(me.LeFix[0]))))[:])
 
@@ -100,17 +100,9 @@ func (me *embName) writeTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
-func (me *embName) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
 func (me *embName) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
+	buf := bytes.NewBuffer(make([]byte, 0, (24432)+(0)+(0)+(0)+(0)))
+	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
 	return
@@ -207,24 +199,24 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
+func (me *embName) WriteTo(w io.Writer) (int64, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, (24432)+(0)+(0)+(0)+(0)))
+	if err := me.marshalTo(buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
+
+func (me *fixed) marshalTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write((*[2036]byte)(unsafe.Pointer(me))[:])
 
 	return
 }
 
-func (me *fixed) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
 func (me *fixed) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
+	buf := bytes.NewBuffer(make([]byte, 0, 2036))
+	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
 	return
@@ -245,11 +237,19 @@ func (me *fixed) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
+func (me *fixed) WriteTo(w io.Writer) (int64, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, 2036))
+	if err := me.marshalTo(buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
+}
+
+func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 
 	var data bytes.Buffer
 
-	if err = me.embName.writeTo(&data); err != nil {
+	if err = me.embName.marshalTo(&data); err != nil {
 		return
 	}
 	lembName := (data.Len())
@@ -361,7 +361,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 				} else {
 					buf.WriteByte(1)
 					pv01 := *t
-					if err = pv01.writeTo(&data); err != nil {
+					if err = pv01.marshalTo(&data); err != nil {
 						return
 					}
 					lm0 := (data.Len())
@@ -373,7 +373,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 				lm0 := (len(t))
 				buf.Write((*[8]byte)(unsafe.Pointer(&lm0))[:])
 				for i1 := 0; i1 < (lm0); i1++ {
-					if err = t[i1].writeTo(&data); err != nil {
+					if err = t[i1].marshalTo(&data); err != nil {
 						return
 					}
 					li1 := (data.Len())
@@ -390,7 +390,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 					} else {
 						buf.WriteByte(1)
 						pv02 := *t[i1]
-						if err = pv02.writeTo(&data); err != nil {
+						if err = pv02.marshalTo(&data); err != nil {
 							return
 						}
 						li1 := (data.Len())
@@ -471,17 +471,9 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
-func (me *testStruct) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
-	if err := me.writeTo(&buf); err != nil {
-		return 0, err
-	}
-	return buf.WriteTo(w)
-}
-
 func (me *testStruct) MarshalBinary() (data []byte, err error) {
-	var buf bytes.Buffer
-	if err = me.writeTo(&buf); err == nil {
+	buf := bytes.NewBuffer(make([]byte, 0, (0)+(0)+(1)+(16)+(504)+(0)+(0)+(24)+(4072)+(0)+(0)+(0)+(0)))
+	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
 	return
@@ -754,4 +746,12 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	}
 
 	return
+}
+
+func (me *testStruct) WriteTo(w io.Writer) (int64, error) {
+	buf := bytes.NewBuffer(make([]byte, 0, (0)+(0)+(1)+(16)+(504)+(0)+(0)+(24)+(4072)+(0)+(0)+(0)+(0)))
+	if err := me.marshalTo(buf); err != nil {
+		return 0, err
+	}
+	return buf.WriteTo(w)
 }

@@ -24,11 +24,11 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 For each (specified) `struct` that has any serializable fields at all, the following methods are generated:
 
 ```go
-	writeTo(bytes.Buffer) error         // called by WriteTo and MarshalBinary:
-	WriteTo(io.Writer) (int64, error)   // implements io.WriterTo
-	MarshalBinary() ([]byte, error)     // implements encoding.BinaryMarshaler
-	ReadFrom(io.Reader) (int64, error)  // implements io.ReaderFrom, calls:
-	UnmarshalBinary([]byte) error       // implements encoding.BinaryUnmarshaler
+    marshalTo(bytes.Buffer) (error)     // called by WriteTo and MarshalBinary:
+    WriteTo(io.Writer) (int64, error)   // implements io.WriterTo
+    MarshalBinary() ([]byte, error)     // implements encoding.BinaryMarshaler
+    ReadFrom(io.Reader) (int64, error)  // implements io.ReaderFrom, calls:
+    UnmarshalBinary([]byte) error       // implements encoding.BinaryUnmarshaler
 ```
 
 ## Satisfies my own following fuzzy in-flux spec that I found underserved by the ecosystem at time of writing:

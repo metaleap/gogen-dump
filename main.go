@@ -50,7 +50,7 @@ func main() {
 					case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
 						optIgnoreUnknownTypeCases, ditch = true, true
 					default:
-						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.TrimL(tn, "-"), "="); tsyn != "" && tref != "" {
+						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.Skip(tn, '-'), "="); tsyn != "" && tref != "" {
 							ditch, tSynonyms[tsyn] = true, tref
 						}
 					}
