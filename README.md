@@ -61,7 +61,7 @@ So by and large, use-cases are limited to scenarios such as:
         myField my.Iface `ggd:"bool []byte somePkg.otherType *orAnotherType"`
 
     (only concrete types should be named in there: no further interfaces; minimum of 2 and maximum of 255 entries; also works equivalently for slice/array/pointer/map(value)-of-interface-type fields/values or same-package type aliases/synonyms of such)
-- fields to directly included (but not referenced via pointer/slice/etc.) "inline" in-struct "anonymous" sub-structs to arbitrary nesting depths
+- fields to directly included (but not indirected via pointer/slice/etc.) "inline" in-struct "anonymous" sub-structs to arbitrary nesting depths
 - all of a `struct`'s *embeds* are "fields", too (and dealt with as described above+below) for our purposes here
 - all of the above (except "inline" in-struct "anonymous" sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
 
