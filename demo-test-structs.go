@@ -29,6 +29,7 @@ type fixed struct {
 
 type testStruct struct {
 	embName
+	Age       ****uint
 	Deleted   bool
 	subStruct struct {
 		Complex   complex128
@@ -47,7 +48,6 @@ type testStruct struct {
 		}
 		Foo [][2]map[rune]***[]*int16
 	}
-	Age ****uint
 }
 
 type embName struct {
@@ -56,5 +56,6 @@ type embName struct {
 	FirstName   string
 	MiddleNames []***[5]*string
 	LastName    **string
+	TriState    ***bool
 	Ch          chan bool
 }

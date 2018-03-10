@@ -3,8 +3,8 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"sort"
 	"strconv"
-	// "reflect"
 	"unsafe"
 
 	"github.com/go-leap/dev/go"
@@ -12,21 +12,21 @@ import (
 )
 
 func collectTypes() {
-	tdot.Structs = make([]*tmplDotStructTypeDef, 0, len(ts))
+	tdot.Structs = make([]*tmplDotStruct, 0, len(ts))
 	for t, s := range ts {
-		tdstd := &tmplDotStructTypeDef{TName: t.Name.Name, Fields: collectFields(s)}
-		if l := len(tdstd.Fields); l > 0 {
-			tdstd.Fields[l-1].isLast = true
-			tdot.Structs = append(tdot.Structs, tdstd)
+		tds := &tmplDotStruct{TName: t.Name.Name, Fields: collectFields(s)}
+		if l := len(tds.Fields); l > 0 {
+			tds.Fields[l-1].isLast = true
+			tdot.Structs = append(tdot.Structs, tds)
 		}
 	}
 
 	// any tSynonyms we can pick up from struct-field-tags?
-	for _, tdstd := range tdot.Structs {
-		for _, tdf := range tdstd.Fields {
+	for _, tds := range tdot.Structs {
+		for _, tdf := range tds.Fields {
 			if len(tdf.taggedUnion) == 1 {
 				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn == tref {
-					println(tdstd.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known")
+					println(tds.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known")
 				} else {
 					tSynonyms[tsyn] = tref
 				}
@@ -36,10 +36,12 @@ func collectTypes() {
 	}
 
 	tdot.allStructTypeDefsCollected = true
+	sort.Sort(&tdot) // prevents pointless diffs
+
 	// anylyze fixed-size fields for fixed-size siblings
-	for _, tdstd := range tdot.Structs {
+	for _, tds := range tdot.Structs {
 		fsstart, fsaccum := -1, 0
-		for i, tdf := range tdstd.Fields {
+		for i, tdf := range tds.Fields {
 			fs := tdf.fixedSize()
 			if fs > 0 {
 				if fsaccum += fs; fsstart < 0 {
@@ -51,16 +53,11 @@ func collectTypes() {
 					numskip--
 				}
 				if fsstart >= 0 && numskip > 0 {
-					tdstd.Fields[fsstart].fixedsizeExt, tdstd.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
+					tds.Fields[fsstart].fixedsizeExt, tds.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
 				}
 				fsstart, fsaccum = -1, 0
 			}
 		}
-		// for _, tdf := range tdstd.Fields {
-		// 	if tdf.fixedsizeExtNumSkip > 0 {
-		// 		println(tdstd.TName + "." + tdf.FName + ": skips the next " + strconv.Itoa(tdf.fixedsizeExtNumSkip) + " fields in " + strconv.Itoa(tdf.fixedsizeExt) + "B instead of just " + strconv.Itoa(tdf.fixedsize) + "B")
-		// 	}
-		// }
 	}
 }
 
@@ -226,9 +223,9 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
-		for _, tdstd := range tdot.Structs {
-			if tdstd.TName == typeident {
-				return mult * tdstd.fixedSize()
+		for _, tds := range tdot.Structs {
+			if tds.TName == typeident {
+				return mult * tds.fixedSize()
 			}
 		}
 		return -1
