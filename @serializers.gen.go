@@ -8,7 +8,6 @@ import (
 	"unsafe"
 
 	fmt "fmt"
-	time "time"
 )
 
 func (me *fixed) writeTo(buf *bytes.Buffer) (err error) {
@@ -60,15 +59,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	buf.Write((*[8]byte)(unsafe.Pointer(&lembName))[:])
 	data.WriteTo(buf)
 
-	if me.Deleted {
-		buf.WriteByte(1)
-	} else {
-		buf.WriteByte(0)
-	}
-
-	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.subStruct.Complex))))[:])
-
-	buf.Write(((*[504]byte)(unsafe.Pointer(&(me.subStruct.FixedSize[0]))))[:])
+	buf.Write((*[521]byte)(unsafe.Pointer(&me.Deleted))[:])
 
 	if me.Hm.Balance == nil {
 		buf.WriteByte(0)
@@ -91,9 +82,7 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write(((*[8]byte)(unsafe.Pointer(&(me.Hm.Hm.AccountAge))))[:])
 
-	buf.Write(((*[4072]byte)(unsafe.Pointer(&(me.Hm.Hm.Lookie[0]))))[:])
-
-	buf.Write(((*[24]byte)(unsafe.Pointer(&(me.Hm.Hm.HowLong[0]))))[:])
+	buf.Write((*[4096]byte)(unsafe.Pointer(&me.Hm.Hm.HowLong[0]))[:])
 
 	{
 		d, e := me.Hm.Hm.When.MarshalBinary()
@@ -304,14 +293,8 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	}
 	p += lembName
 
-	me.Deleted = (data[p] == 1)
-	p++
-
-	me.subStruct.Complex = *((*complex128)(unsafe.Pointer(&data[p])))
-	p += 16
-
-	me.subStruct.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[p])))
-	p += 504
+	*((*[521]byte)(unsafe.Pointer(&me.Deleted))) = *((*[521]byte)(unsafe.Pointer(&data[p])))
+	p += 521
 
 	{
 		var p00 *[3]**int16
@@ -340,11 +323,8 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	me.Hm.Hm.AccountAge = *((*int)(unsafe.Pointer(&data[p])))
 	p += 8
 
-	me.Hm.Hm.Lookie = *((*[2]fixed)(unsafe.Pointer(&data[p])))
-	p += 4072
-
-	me.Hm.Hm.HowLong = *((*[3]time.Duration)(unsafe.Pointer(&data[p])))
-	p += 24
+	*((*[4096]byte)(unsafe.Pointer(&me.Hm.Hm.HowLong[0]))) = *((*[4096]byte)(unsafe.Pointer(&data[p])))
+	p += 4096
 
 	lHmHmWhen := (*((*int)(unsafe.Pointer(&data[p]))))
 	p += 8
@@ -547,7 +527,8 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				if p++; data[p-1] != 0 {
 					if p++; data[p-1] != 0 {
-						v40 := *((*uint)(unsafe.Pointer(&data[p]))) /* p += 8 */
+						v40 := *((*uint)(unsafe.Pointer(&data[p])))
+						p += 8
 						p30 = &v40
 					}
 					p20 = &p30
@@ -695,7 +676,8 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 			if p++; data[p-1] != 0 {
 				lLastName := (*((*int)(unsafe.Pointer(&data[p]))))
 				p += 8
-				v20 := string(data[p : p+lLastName]) /* p += lLastName */
+				v20 := string(data[p : p+lLastName])
+				p += lLastName
 				p10 = &v20
 			}
 			p00 = &p10

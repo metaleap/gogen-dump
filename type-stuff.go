@@ -40,23 +40,20 @@ func collectTypes() {
 	for _, tdstd := range tdot.Structs {
 		fsstart, fsaccum := -1, 0
 		for i, tdf := range tdstd.Fields {
-			if fs := tdf.fixedSize(); tdf.nextOneWasSkipped {
+			fs := tdf.fixedSize()
+			if fs > 0 {
+				if fsaccum += fs; fsstart < 0 {
+					fsstart = i
+				}
+			}
+			if numskip, notme := i-fsstart, fs <= 0; notme || tdf.isLast || tdf.nextOneWasSkipped {
+				if notme {
+					numskip--
+				}
+				if fsstart >= 0 && numskip > 0 {
+					tdstd.Fields[fsstart].fixedsizeExt, tdstd.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
+				}
 				fsstart, fsaccum = -1, 0
-			} else {
-				if fs > 0 {
-					if fsaccum += fs; fsstart < 0 {
-						fsstart = i
-					}
-				}
-				if numskip, notme := i-fsstart, fs <= 0; notme || tdf.isLast {
-					if notme {
-						numskip--
-					}
-					if fsstart >= 0 && numskip > 0 {
-						tdstd.Fields[fsstart].fixedsizeExt, tdstd.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
-					}
-					fsstart, fsaccum = -1, 0
-				}
 			}
 		}
 		// for _, tdf := range tdstd.Fields {

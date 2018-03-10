@@ -39,8 +39,8 @@ type testStruct struct {
 		Balance *[3]**int16
 		Hm      struct {
 			AccountAge int
+			HowLong    [3]time.Duration // `ggd:"int64"` // not needed here because time.Duration is in tSynonyms by default for convenience
 			Lookie     [2]fixed
-			HowLong    [3]time.Duration // `ggd:"int64"` // not needed here because in tSynonyms by default
 			When       time.Time
 			Any        map[*fixed]iface1 `ggd:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 			Crikey     sort.StringSlice  `ggd:"[]string"`

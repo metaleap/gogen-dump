@@ -2,7 +2,7 @@
 
 Generates **low-level/high-performance binary serialization**/deserialization methods for the Go `struct` type-defs you already have:
 
-### *no schema files, practically no restrictions, no safety hatches*!
+### *no schema files; profoundly few restrictions or safety hatches*!
 
 ## Usage:
 
@@ -19,7 +19,7 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 - **Package path** can be file-system (dir or file) path (rel/abs) or Go import path
 - *If* the very next arg is some `my-output-file-name.go`, then that one will be written instead of the default `@serializers.gen.go`.
 - Optionally, all the following args each name a struct type-def to be processed (recommended) — if none, *all* declared in your package will be processed (undesirable)
-- (Some more exotic flags are offered, see bottom of this doc)
+- (Some more exotic flags to be appended last are also offered, see bottom of this doc)
 
 For each (specified) `struct` that has any serializable fields at all, the following methods are generated:
 
@@ -65,10 +65,10 @@ So by and large, use-cases are limited to scenarios such as:
 - all of a `struct`'s *embeds* are 'fields', too (and dealt with as described above+below) for our purposes here
 - all of the above (except 'inline' in-struct 'anonymous' sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
 
-## Further optional flags for tweakers:
+## Further optional flags to append for tuners and tweakers:
 
 - `-safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing** (the default), varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
-- `-varintsInFixedSizeds` — much terser+faster code is generated for known-to-be-fixed-size fields (incl. structs and statically-sized-arrays that themselves contain no slices, maps, pointers, strings), but varints (`int`, `uint`, `uintptr`) are not considered "fixed-size" for this purpose by default. **If this flag is present**, they *are* and then wherever this faster (de)serialization logic is generated, the points made above (for `-safeVarints`) no longer apply and varints occupy the number of bytes dictated by the current machine-word width (4 bytes or 8 bytes), meaning source and destination machines must match not just in endianness and "schema"-`struct`ural-identity but also in their varint size.
+- `-varintsInFixedSizeds` — much terser+faster code is generated for known-to-be-fixed-size fields (incl. structs and statically-sized-arrays that themselves contain no slices, maps, pointers, strings), but varints (`int`, `uint`, `uintptr`) are not considered "fixed-size" for this purpose by default. **If this flag is present**, they *are* and then wherever this faster (de)serialization logic is generated, the points made above (for `-safeVarints`) no longer apply within larger contiguous fixed-size segments (arrays, structs, or multiple subsequent fixed-size sibling fields in a struct) and varints in there occupy the number of bytes dictated by the current machine-word width (4 bytes or 8 bytes), meaning source and destination machines must match not just in endianness and "schema"-`struct`ural-identity but also in their varint size.
 - `-ignoreUnknownTypeCases` — if present, serialization of interface-typed fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.
 - `-sql.IsolationLevel=int`, `-os.FileMode=uint32`, `-sort.StringSlice=[]string`, etc. — declares as a type synonym/alias the specified type used in but not defined in the current package, to generate low-level (de)serialization code for fields/elements of such types that represent prim-types (and often do not implement `encoding.BinaryMarshaler` / `encoding.BinaryUnmarshaler`).
   - For convenience, `-time.Duration=int64` is already always implicitly present and does not need to be expressly specified.
