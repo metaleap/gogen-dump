@@ -23,10 +23,12 @@ func collectTypes() {
 	for _, tdstd := range tdot.Structs {
 		for _, tdf := range tdstd.Fields {
 			if len(tdf.taggedUnion) == 1 {
-				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn != tref && tsyn != "" && tref != "" {
+				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn == tref {
+					panic(tdstd.TName + "." + tdf.FName + ": remove the redundant type alias of " + tdf.typeIdent + " = " + tref)
+				} else {
 					tSynonyms[tsyn] = tref
-					tdf.taggedUnion = nil
 				}
+				tdf.taggedUnion = nil
 			}
 		}
 	}
@@ -52,7 +54,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 				tagval := fld.Tag.Value[pos+len(tagpref):]
 				if tagval = ustr.Trim(tagval[:ustr.Pos(tagval, "\"")]); tagval == "-" {
 					tdf.skip = true
-				} else if tdf.taggedUnion = ustr.Sans(ustr.Map(ustr.Split(tagval, " "), ustr.Trim), " "); len(tdf.taggedUnion) > 255 {
+				} else if tdf.taggedUnion = ustr.Sans(ustr.Map(ustr.Split(ustr.Trim(tagval), " "), ustr.Trim), " ", ""); len(tdf.taggedUnion) > 255 {
 					panic(tdf.FName + ": too many case alternatives for serializable .(type) switch (maximum is 255)")
 				}
 			}
