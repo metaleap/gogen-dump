@@ -41,14 +41,14 @@ For each (specified) `struct` that has any serializable fields at all, the follo
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:
 
 - varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width (except in fixed-size fields/structures with `-varintsInFixedSizeds` on, described further below)
-- caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no 'address registry' for storage and restoral of sharing is kept
-- caution: generated code imports and uses `unsafe` and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
+- caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no "address registry" for storage and restoral of sharing is kept
+- caution: generated code uses `unsafe.Pointer` everywhere and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
 - caution: no explicit or gradual versioning or sanity/length checks
 
 So by and large, use-cases are limited to scenarios such as:
-- local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or corruption of such files at worst only delays but won't break the system),
-- or IPC/RPC across processes/machines with identical endianness and where "schema" structure will always be kept in sync (by means of architecture/ops discipline)
-- any-and-all designs where endianness and `struct`ural (not nominal) type identities are guaranteed to remain equivalent between the serializing and deserializing parties and moments-in-time (or where a fallback mechanism is sensible and in place).
+- local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or "corruption" —aka. "schema"-`struct`ural "version" changes— of such files at worst only delays but won't break the system),
+- or IPC/RPC across processes/machines with identical endianness and where "schema" structure will always be kept in sync (by means of architectural/ops practice/discipline)
+- more generally, any-and-all designs where endianness and `struct`ural (not nominal) type identities are guaranteed to remain equivalent between the serializing and deserializing parties and moments-in-time (or where a fallback mechanism is sensible and in place).
 
 ## Supports all `builtin` primitive-type fields plus:
 
@@ -61,9 +61,9 @@ So by and large, use-cases are limited to scenarios such as:
         myField my.Iface `ggd:"bool []byte somePkg.otherType *orAnotherType"`
 
     (only concrete types should be named in there: no further interfaces; minimum of 2 and maximum of 255 entries; also works equivalently for slice/array/pointer/map(value)-of-interface-type fields/values or same-package type aliases/synonyms of such)
-- fields to directly included (but not referenced via pointer/slice/etc.) 'inline' in-struct 'anonymous' sub-structs to arbitrary nesting depths
-- all of a `struct`'s *embeds* are 'fields', too (and dealt with as described above+below) for our purposes here
-- all of the above (except 'inline' in-struct 'anonymous' sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
+- fields to directly included (but not referenced via pointer/slice/etc.) "inline" in-struct "anonymous" sub-structs to arbitrary nesting depths
+- all of a `struct`'s *embeds* are "fields", too (and dealt with as described above+below) for our purposes here
+- all of the above (except "inline" in-struct "anonymous" sub-structs) can be arbitrarily referred to in various nestings of pointers, slices, maps, arrays, pointers to pointers to slices of maps from arrays to pointers etc..
 
 ## Further optional flags to append for tuners and tweakers:
 
@@ -73,5 +73,5 @@ So by and large, use-cases are limited to scenarios such as:
 - `-sql.IsolationLevel=int`, `-os.FileMode=uint32`, `-sort.StringSlice=[]string`, etc. — declares as a type synonym/alias the specified type used in but not defined in the current package, to generate low-level (de)serialization code for fields/elements of such types that represent prim-types (and often do not implement `encoding.BinaryMarshaler` / `encoding.BinaryUnmarshaler`).
   - For convenience, `-time.Duration=int64` is already always implicitly present and does not need to be expressly specified.
   - Reminder that in-package type aliases / synonyms will be picked up automatically and need not be expressly specified.
-  - An alternative to type-aliasing via command-line flags is a `ggd:"underlyingtypename"` struct-field-tag next to the 'offender' in your source `struct`(s). It only needs to exist once, not for every single applicable field.
+  - An alternative to type-aliasing via command-line flags is a `ggd:"underlyingtypename"` struct-field-tag next to the "offender" in your source `struct`(s). It only needs to exist once, not for every single applicable field.
 - all flags can be included via both `-` and `--`
