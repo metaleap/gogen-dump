@@ -29,7 +29,7 @@ func genDump() {
 					tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, "", 0, 0, tdf.taggedUnion)
 				}
 
-				if tdf.isLast && (oneop || !ustr.Has(tdf.finalTypeIdent(), "[")) { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to p
+				if (i == len(tdt.Fields)-1) && (oneop || !ustr.Has(tdf.finalTypeIdent(), "[")) { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to p
 					lastp, lastpalt := ustr.Last(tdf.TmplR, " p++ "), ustr.Last(tdf.TmplR, " p +=")
 					if lastpalt > lastp {
 						lastp = lastpalt
