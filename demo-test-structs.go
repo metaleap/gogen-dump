@@ -29,17 +29,18 @@ type fixed struct {
 
 type testStruct struct {
 	embName
-	Deleted  bool `ggd:"-"`
-	DingDong struct {
+	Deleted   bool
+	subStruct struct {
 		Complex   complex128
 		FixedSize [9][7]float64
 	}
-	Hm struct {
+	SkipThis bool `ggd:"-"`
+	Hm       struct {
 		Balance *[3]**int16
 		Hm      struct {
 			AccountAge int
 			Lookie     [2]fixed
-			HowLong    [3]time.Duration
+			HowLong    [3]time.Duration // `ggd:"int64"` // not needed here because in tSynonyms by default
 			When       time.Time
 			Any        map[*fixed]iface1 `ggd:"fixed *fixed []fixed [5][6]fixed *embName []embName []*embName []*float32"`
 			Crikey     sort.StringSlice  `ggd:"[]string"`

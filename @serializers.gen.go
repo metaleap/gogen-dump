@@ -60,9 +60,15 @@ func (me *testStruct) writeTo(buf *bytes.Buffer) (err error) {
 	buf.Write((*[8]byte)(unsafe.Pointer(&lembName))[:])
 	data.WriteTo(buf)
 
-	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.DingDong.Complex))))[:])
+	if me.Deleted {
+		buf.WriteByte(1)
+	} else {
+		buf.WriteByte(0)
+	}
 
-	buf.Write(((*[504]byte)(unsafe.Pointer(&(me.DingDong.FixedSize[0]))))[:])
+	buf.Write(((*[16]byte)(unsafe.Pointer(&(me.subStruct.Complex))))[:])
+
+	buf.Write(((*[504]byte)(unsafe.Pointer(&(me.subStruct.FixedSize[0]))))[:])
 
 	if me.Hm.Balance == nil {
 		buf.WriteByte(0)
@@ -298,10 +304,13 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	}
 	p += lembName
 
-	me.DingDong.Complex = *((*complex128)(unsafe.Pointer(&data[p])))
+	me.Deleted = (data[p] == 1)
+	p++
+
+	me.subStruct.Complex = *((*complex128)(unsafe.Pointer(&data[p])))
 	p += 16
 
-	me.DingDong.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[p])))
+	me.subStruct.FixedSize = *((*[9][7]float64)(unsafe.Pointer(&data[p])))
 	p += 504
 
 	{

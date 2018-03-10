@@ -20,17 +20,50 @@ func collectTypes() {
 			tdot.Structs = append(tdot.Structs, tdstd)
 		}
 	}
+
+	// any tSynonyms we can pick up from struct-field-tags?
 	for _, tdstd := range tdot.Structs {
 		for _, tdf := range tdstd.Fields {
 			if len(tdf.taggedUnion) == 1 {
 				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn == tref {
-					panic(tdstd.TName + "." + tdf.FName + ": remove the redundant type alias of " + tdf.typeIdent + " = " + tref)
+					println(tdstd.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known")
 				} else {
 					tSynonyms[tsyn] = tref
 				}
 				tdf.taggedUnion = nil
 			}
 		}
+	}
+
+	tdot.allStructTypeDefsCollected = true
+	// anylyze fixed-size fields for fixed-size siblings
+	for _, tdstd := range tdot.Structs {
+		fsstart, fsaccum := -1, 0
+		for i, tdf := range tdstd.Fields {
+			if fs := tdf.fixedSize(); tdf.nextOneWasSkipped {
+				fsstart, fsaccum = -1, 0
+			} else {
+				if fs > 0 {
+					if fsaccum += fs; fsstart < 0 {
+						fsstart = i
+					}
+				}
+				if numskip, notme := i-fsstart, fs <= 0; notme || tdf.isLast {
+					if notme {
+						numskip--
+					}
+					if fsstart >= 0 && numskip > 0 {
+						tdstd.Fields[fsstart].fixedsizeExt, tdstd.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
+					}
+					fsstart, fsaccum = -1, 0
+				}
+			}
+		}
+		// for _, tdf := range tdstd.Fields {
+		// 	if tdf.fixedsizeExtNumSkip > 0 {
+		// 		println(tdstd.TName + "." + tdf.FName + ": skips the next " + strconv.Itoa(tdf.fixedsizeExtNumSkip) + " fields in " + strconv.Itoa(tdf.fixedsizeExt) + "B instead of just " + strconv.Itoa(tdf.fixedsize) + "B")
+		// 	}
+		// }
 	}
 }
 
@@ -49,6 +82,7 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 		} else {
 			panic(l)
 		}
+
 		if tagpref := "ggd:\""; fld.Tag != nil {
 			if pos := ustr.Pos(fld.Tag.Value, tagpref); pos >= 0 {
 				tagval := fld.Tag.Value[pos+len(tagpref):]
@@ -59,9 +93,10 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 				}
 			}
 		}
+		var skip4inlinestruct bool
 		if !tdf.skip {
 			if substruc, _ := fld.Type.(*ast.StructType); substruc != nil {
-				tdf.skip = true
+				skip4inlinestruct, tdf.skip = true, true
 				for _, subtdf := range collectFields(substruc) {
 					subtdf.FName = tdf.FName + "." + subtdf.FName
 					fields = append(fields, subtdf)
@@ -72,6 +107,8 @@ func collectFields(st *ast.StructType) (fields []*tmplDotField) {
 		}
 		if !tdf.skip {
 			fields = append(fields, tdf)
+		} else if lf := len(fields); lf > 0 && !skip4inlinestruct {
+			fields[lf-1].nextOneWasSkipped = true
 		}
 	}
 	return
@@ -123,7 +160,7 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 				tdot.Imps[pkgname].ImportPath = pkgimppath
 			}
 		}
-		return pkgname + "." + sel.Sel.Name, -1
+		return pkgname + "." + sel.Sel.Name, 0
 
 	} else if iface, _ := t.(*ast.InterfaceType); iface != nil {
 		return "interface{}", -1

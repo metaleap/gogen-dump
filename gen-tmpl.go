@@ -122,12 +122,15 @@ type tmplDotField struct {
 	TmplW string
 	TmplR string
 
-	typeIdent   string
-	taggedUnion []string
-	skip        bool
-	isLast      bool
+	typeIdent         string
+	taggedUnion       []string
+	skip              bool
+	nextOneWasSkipped bool
+	isLast            bool
 
-	fixedsize int
+	fixedsize           int
+	fixedsizeExt        int
+	fixedsizeExtNumSkip int
 }
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
