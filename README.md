@@ -2,7 +2,7 @@
 
 Generates **low-level/high-performance binary serialization**/deserialization methods for the Go `struct` type-defs you already have:
 
-### *no schema files; profoundly few restrictions or safety hatches*!
+### *no schema files, no `reflect`; profoundly few restrictions or safety hatches*!
 
 ## Usage:
 
