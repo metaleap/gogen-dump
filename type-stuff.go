@@ -25,7 +25,7 @@ func collectTypes() {
 		for _, tdf := range tds.Fields {
 			if len(tdf.taggedUnion) == 1 {
 				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn == tref {
-					println(tds.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known")
+					println(tds.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known and could be removed")
 				} else {
 					tSynonyms[tsyn] = tref
 				}
@@ -164,7 +164,7 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 		return "", -1
 
 	} else if struc, _ := t.(*ast.StructType); struc != nil {
-		println("skipping a field: indirect (via ptr, slice, etc) in-struct inline sub-structs not supported (only direct ones are). mark it `gogendump:\"-\"` to not see this message.")
+		println("skipping a field: indirected (via ptr, slice, etc) inline in-struct anonymous sub-structs not supported (only directly placed ones are) — mark it `gogendump:\"-\"` to not see this message.")
 		return "", -1
 
 	} else if ch, _ := t.(*ast.ChanType); ch != nil {
@@ -190,7 +190,7 @@ func sizedArrMultAndElemType(arrTypeIdent string) (mult int, elemTypeIdent strin
 }
 
 func fixedSizeForTypeSpec(typeIdent string) int {
-	if ustr.Idx(typeIdent, '*') >= 0 || ustr.Has(typeIdent, "[]") || ustr.Has(typeIdent, "map[") || typeIdent == "string" { // early return quite often
+	if ustr.IdxB(typeIdent, '*') >= 0 || ustr.Has(typeIdent, "[]") || ustr.Has(typeIdent, "map[") || typeIdent == "string" { // early return quite often
 		return -1
 	}
 	mult, typeident := sizedArrMultAndElemType(typeIdent)
@@ -223,7 +223,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	}
 	if tsyn := tSynonyms[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
-	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 || typeident == "string" {
+	} else if ustr.IdxB(typeident, '*') >= 0 || ustr.IdxB(typeident, '[') >= 0 || typeident == "string" {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
@@ -241,7 +241,7 @@ func finalElemTypeSpec(typeSpec string) string {
 	if typeSpec != "" {
 		if typeSpec[0] == '*' {
 			return finalElemTypeSpec(ustr.Skip(typeSpec, '*'))
-		} else if pclose := ustr.Idx(typeSpec, ']'); pclose > 0 && (typeSpec[0] == '[' || ustr.Pref(typeSpec, "map[")) {
+		} else if pclose := ustr.IdxBMatching(typeSpec, ']', '['); pclose > 0 && (typeSpec[0] == '[' || ustr.Pref(typeSpec, "map[")) {
 			return finalElemTypeSpec(typeSpec[pclose+1:])
 		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
 			return finalElemTypeSpec(tsyn)
@@ -254,12 +254,12 @@ func ensureImportFor(typeSpec string) (pkgName []string) {
 	if typeSpec != "" {
 		if typeSpec[0] == '*' {
 			return ensureImportFor(ustr.Skip(typeSpec, '*'))
-		} else if pclose := ustr.Idx(typeSpec, ']'); typeSpec[0] == '[' && pclose > 0 {
+		} else if pclose := ustr.IdxBMatching(typeSpec, ']', '['); typeSpec[0] == '[' && pclose > 0 {
 			return ensureImportFor(typeSpec[pclose+1:])
 		} else if ustr.Pref(typeSpec, "map[") {
 			return append(ensureImportFor(typeSpec[pclose+1:]),
 				ensureImportFor(typeSpec[4:pclose])...)
-		} else if i := ustr.Idx(typeSpec, '.'); i > 0 {
+		} else if i := ustr.IdxB(typeSpec, '.'); i > 0 {
 			tdot.Imps[typeSpec[:i]].Used = true
 			return []string{typeSpec[:i]}
 		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
@@ -277,7 +277,7 @@ func typeSizeHeur(typeIdent string, expr string) string {
 	} else if tident[0] == '*' {
 		n := len(tident) - len(ustr.Skip(tident, '*'))
 		h = "(" + s(n) + "+" + typeSizeHeur(tident[n:], "") + ")"
-	} else if pclose := ustr.Idx(tident, ']'); tident[0] == '[' && pclose == 1 {
+	} else if pclose := ustr.IdxBMatching(tident, ']', '['); tident[0] == '[' && pclose == 1 {
 		if expr != "" {
 			l = "len(" + expr + ") * "
 		} else {

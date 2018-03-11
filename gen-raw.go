@@ -16,7 +16,7 @@ func genDump() error {
 	for _, tdt := range tdot.Structs {
 		if fs := tdt.fixedSize(); fs > 0 {
 			ensureImportFor(tdt.TName)
-			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[0]))) ; p = " + s(fs)
+			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[p]))) ; p += " + s(fs)
 			tdt.TmplW = "buf.Write((*[" + s(fs) + "]byte)(unsafe.Pointer(me))[:])"
 		} else {
 			for i := 0; i < len(tdt.Fields); i++ {
@@ -128,7 +128,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			tmplR += " ; " + mfr + " = p0" + s(iterDepth) + " } "
 			tmplW += "\n\t\t" + tw
 			tmplW += "\n\t" + ustr.Times("}", numindir)
-		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.Pos(typeName[1:], "]")+1; pclose > 0 && (typeName[0] == '[' || ismap) {
+		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.IdxBMatching(typeName, ']', '['); pclose > 0 && (typeName[0] == '[' || ismap) {
 			// ARRAY / SLICE / MAP
 
 			arrfixedsize, slen := 0, typeName[1:pclose]
@@ -149,18 +149,19 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			valtypespec, idx := typeName[pclose+1:], "i"+s(iterDepth)
 
 			if ismap {
-				mk, mv := "k"+s(iterDepth), "m"+s(iterDepth)
+				keytypespec, mk, mv := typeName[4:pclose], "k"+s(iterDepth), "m"+s(iterDepth)
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
 
-				tmplR += "\n\t\tvar b" + mk + " " + typeName[4:pclose]
+				tmplR += "\n\t\tvar b" + mk + " " + keytypespec
 				tmplR += "\n\t\tvar b" + mv + " " + valtypespec
-				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tds, typeName[4:pclose], "", 0, iterDepth+1, nil)
+				tr, _ := genForFieldOrVarOfNamedTypeRW(mk, "", tds, keytypespec, "", 0, iterDepth+1, nil)
 				tmplR += "\n\t\t" + tr
 				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				tmplR += "\n\t\t" + mfr + "[b" + mk + "] = b" + mv
-				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tds, typeName[4:pclose], "", 0, iterDepth+1, nil)
+				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tds, keytypespec, "", 0, iterDepth+1, nil)
+
 				tmplW += "\n\t\t" + tw
 				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
@@ -173,10 +174,10 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
 				sfs := s(fs)
 				tmplR += "if " + slen + " > 0 { " +
-					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + mfr + "[0])))[0:" + sfs + "*" + slen + "], data[p:p+(" + sfs + "*" + slen + ")]) " +
+					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:" + sfs + "*" + slen + "], data[p:p+(" + sfs + "*" + slen + ")]) " +
 					" ; p += (" + sfs + "*" + slen + ") }"
 				tmplW += "if " + slen + " > 0 { " +
-					" buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&" + mfw + "[0]))[:" + sfs + "*" + slen + "]) " +
+					" buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
 					" }"
 			} else {
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
@@ -231,17 +232,15 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					ensureImportFor(typeName)
 					trpref = mfr + "= " + typeName + "{} ; "
 				}
-				tmplR = genLenR(nfr) + " ; if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
+				tmplR = genLenR(nfr) + " ; if " + lf + " > 0 { if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf + " }"
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
 				for tspec := range ts {
 					if tspec.Name.Name == typeName {
-						// tds.HasWData = true
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')
 						}
-						// tmplR = " /*foo1*/ " + tmplR + " /*foo2*/ "
-						tmplR = " ; { var off int ; if off, err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(data[p:]); err != nil { return } ; p += off } ; "
+						tmplR = "if err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(&p, data); err != nil { return } ; "
 						tmplW = "if err = " + mfw + ".marshalTo(buf); err != nil { return } ; "
 						break
 					}
