@@ -2,6 +2,8 @@ package main
 
 import (
 	"go/ast"
+	"go/build"
+	"go/types"
 	"golang.org/x/tools/go/loader"
 	"os"
 	"path/filepath"
@@ -16,8 +18,10 @@ var (
 	genFileName = "@serializers.gen.go"
 	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
 	typeNames   = []string{"fixedSize" /*, "gameWorld", "city", "company", "school", "family"*/, "person", "hobby", "pet", "petPiranha", "petCat", "petDog"}
-	ts          = map[*ast.TypeSpec]*ast.StructType{}
-	tSynonyms   = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
+	typeDefs    = map[*ast.TypeSpec]*ast.StructType{}
+	typeObjs    = map[string]types.Type{}
+	typeSizes   types.Sizes
+	typeSyns    = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
 		"time.Duration": "int64",
 	}
 	goPkgDirPath = tdot.ProgHint
@@ -37,10 +41,13 @@ var (
 
 	optHeuristicLenMaps = "22"
 
-	optHeuristicSizeUnknowns = "123"
+	optHeuristicSizeUnknowns = "234"
+
+	optFixedSizeMaxSizeInGB = 2 // 1024 = 1TB, up to 1048576 = 1PB — this amount is never really allocated (if not strictly needed) and only matters for the specific case of dynamic-length slices of fixed-size items, where this describes the theoretically-supported (by generated de/serialization code) upper bound of total RAM cost for the entire slice
 )
 
 func main() {
+	typeSizes = types.SizesFor(build.Default.Compiler, build.Default.GOARCH)
 	timestarted := time.Now()
 	if len(os.Args) > 1 {
 		if typeNames, goPkgDirPath = nil, os.Args[1]; len(os.Args) > 2 {
@@ -62,7 +69,7 @@ func main() {
 						optIgnoreUnknownTypeCases, ditch = true, true
 					default:
 						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.Skip(tn, '-'), "="); tsyn != "" && tref != "" {
-							ditch, tSynonyms[tsyn] = true, tref
+							ditch, typeSyns[tsyn] = true, tref
 						}
 					}
 				}
@@ -98,7 +105,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for _, gofile := range goProg.Package(goPkgImpPath).Files {
+	goprogpkg := goProg.Package(goPkgImpPath)
+	for _, gofile := range goprogpkg.Files {
 		tdot.PName = gofile.Name.Name
 		for _, decl := range gofile.Decls {
 			if gd, _ := decl.(*ast.GenDecl); gd != nil {
@@ -106,13 +114,14 @@ func main() {
 					if t, _ := spec.(*ast.TypeSpec); t != nil && t.Name != nil {
 						if s, _ := t.Type.(*ast.StructType); s != nil {
 							if len(typeNames) == 0 || ustr.In(t.Name.Name, typeNames...) {
-								ts[t] = s
+								typeDefs[t] = s
 							}
+							typeObjs[t.Name.Name] = goprogpkg.Pkg.Scope().Lookup(t.Name.Name).Type().Underlying()
 						} else if tident, _ := t.Type.(*ast.Ident); tident != nil {
-							tSynonyms[t.Name.Name] = tident.Name
+							typeSyns[t.Name.Name] = tident.Name
 						} else {
 							tid, _ := typeIdentAndFixedSize(t.Type)
-							tSynonyms[t.Name.Name] = tid
+							typeSyns[t.Name.Name] = tid
 						}
 					}
 				}
@@ -120,9 +129,9 @@ func main() {
 		}
 	}
 	for _, tn := range typeNames {
-		found := len(tSynonyms[tn]) > 0
+		found := len(typeSyns[tn]) > 0
 		if !found {
-			for t := range ts {
+			for t := range typeDefs {
 				if found = (t.Name.Name == tn); found {
 					break
 				}

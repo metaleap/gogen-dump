@@ -111,17 +111,19 @@ type tmplDotStruct struct {
 
 func (me *tmplDotStruct) fixedSize() int {
 	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
+		isfixedsize := true
 		for _, fld := range me.Fields {
 			if fs := fld.fixedSize(); fs < 0 {
-				me.fixedsize = -1
+				isfixedsize = false
 				break
 			} else if fs == 0 {
-				panic("should never occur: " + me.TName + "." + fld.FName)
-			} else {
-				me.fixedsize += fs
+				panic("should never occur, your recent changes must have introduced a bug: " + me.TName + "." + fld.FName)
 			}
 		}
-		if me.fixedsize == 0 {
+		if isfixedsize { // so far we really just verified fixed-size-ness but to get the correct size, need to account for alignments/paddings instead of naively summing field sizes
+			me.fixedsize = int(typeSizes.Sizeof(typeObjs[me.TName]))
+		}
+		if me.fixedsize <= 0 {
 			me.fixedsize = -1
 		}
 	}
@@ -158,7 +160,7 @@ type tmplDotField struct {
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
 	typeident = me.typeIdent
-	for tsyn := tSynonyms[typeident]; tsyn != ""; tsyn = tSynonyms[typeident] {
+	for tsyn := typeSyns[typeident]; tsyn != ""; tsyn = typeSyns[typeident] {
 		typeident = tsyn
 	}
 	return

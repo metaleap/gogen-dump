@@ -171,15 +171,17 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
-			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 {
+			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 && 0 > 1 {
 				sfs := s(fs)
+				fixedsizemax := ((1024 * 1024 * 1024) * int(optFixedSizeMaxSizeInGB)) - 1
 				tmplR += "if " + slen + " > 0 { " +
-					" copy(((*[1125899906842623]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:" + sfs + "*" + slen + "], data[p:p+(" + sfs + "*" + slen + ")]) " +
+					" copy(((*[" + s(fixedsizemax) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:" + sfs + "*" + slen + "], data[p:p+(" + sfs + "*" + slen + ")]) " +
 					" ; p += (" + sfs + "*" + slen + ") }"
 				tmplW += "if " + slen + " > 0 { " +
-					" buf.Write((*[1125899906842623]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
+					" buf.Write((*[" + s(fixedsizemax) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
 					" }"
 			} else {
+				offw := len(tmplW)
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
@@ -188,6 +190,14 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplW += "\n\t\t" + tw
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
+
+				if fs = fixedSizeForTypeSpec(valtypespec); fs > 0 && optFixedSizeMaxSizeInGB > 0 {
+					sfs, fixedsizemax := s(fs), int(optFixedSizeMaxSizeInGB*(1024*1024*1024))
+					maxlen := (fixedsizemax / fs) + 1
+					tmplW = tmplW[:offw] + "; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
+						" buf.Write((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
+						" } else { " + tmplW[offw:] + "} ; "
+				}
 			}
 		} else if len(taggedUnion) > 0 {
 			// TAGGED INTERFACE
@@ -223,7 +233,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					mfw = "&" + mfw
 				}
 				tmplW = "buf.Write((*[" + s(fs) + "]byte)(unsafe.Pointer(" + mfw + "))[:])"
-			} else if tsyn := tSynonyms[typeName]; tsyn != "" {
+			} else if tsyn := typeSyns[typeName]; tsyn != "" {
 				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tds, tsyn, "", numIndir, iterDepth, taggedUnion)
 				tmplR = ustr.Replace(tmplR, "(*"+tsyn+")(unsafe.Pointer(", "(*"+typeName+")(unsafe.Pointer(")
 			} else {
@@ -235,7 +245,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplR = genLenR(nfr) + " ; if " + lf + " > 0 { if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf + " }"
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
-				for tspec := range ts {
+				for tspec := range typeDefs {
 					if tspec.Name.Name == typeName {
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')

@@ -11,8 +11,8 @@ import (
 )
 
 func collectTypes() {
-	tdot.Structs = make([]*tmplDotStruct, 0, len(ts))
-	for t, s := range ts {
+	tdot.Structs = make([]*tmplDotStruct, 0, len(typeDefs))
+	for t, s := range typeDefs {
 		tds := &tmplDotStruct{TName: t.Name.Name, Fields: collectFields(s)}
 		if l := len(tds.Fields); l > 0 {
 			tds.Fields[l-1].isLast = true
@@ -27,7 +27,7 @@ func collectTypes() {
 				if tsyn, tref := finalElemTypeSpec(tdf.typeIdent), tdf.taggedUnion[0]; tsyn == tref {
 					println(tds.TName + "." + tdf.FName + ": this type alias " + tdf.typeIdent + " -> " + tref + " was already known and could be removed")
 				} else {
-					tSynonyms[tsyn] = tref
+					typeSyns[tsyn] = tref
 				}
 				tdf.taggedUnion = nil
 			}
@@ -221,7 +221,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 		}
 		return -1
 	}
-	if tsyn := tSynonyms[typeident]; tsyn != "" {
+	if tsyn := typeSyns[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
 	} else if ustr.IdxB(typeident, '*') >= 0 || ustr.IdxB(typeident, '[') >= 0 || typeident == "string" {
 		return -1
@@ -243,7 +243,7 @@ func finalElemTypeSpec(typeSpec string) string {
 			return finalElemTypeSpec(ustr.Skip(typeSpec, '*'))
 		} else if pclose := ustr.IdxBMatching(typeSpec, ']', '['); pclose > 0 && (typeSpec[0] == '[' || ustr.Pref(typeSpec, "map[")) {
 			return finalElemTypeSpec(typeSpec[pclose+1:])
-		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
+		} else if tsyn := typeSyns[typeSpec]; tsyn != "" {
 			return finalElemTypeSpec(tsyn)
 		}
 	}
@@ -262,7 +262,7 @@ func ensureImportFor(typeSpec string) (pkgName []string) {
 		} else if i := ustr.IdxB(typeSpec, '.'); i > 0 {
 			tdot.Imps[typeSpec[:i]].Used = true
 			return []string{typeSpec[:i]}
-		} else if tsyn := tSynonyms[typeSpec]; tsyn != "" {
+		} else if tsyn := typeSyns[typeSpec]; tsyn != "" {
 			return ensureImportFor(tsyn)
 		}
 	}
@@ -301,7 +301,7 @@ func typeSizeHeur(typeIdent string, expr string) string {
 			l = optHeuristicLenStrings
 		}
 		h = "(8 + " + l + ")"
-	} else if tsyn := tSynonyms[tident]; tsyn != "" {
+	} else if tsyn := typeSyns[tident]; tsyn != "" {
 		h = typeSizeHeur(tsyn, expr)
 	} else {
 		if expr != "" {
