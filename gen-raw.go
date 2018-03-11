@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -13,11 +12,11 @@ var (
 	s = strconv.Itoa
 )
 
-func genDump() {
+func genDump() error {
 	for _, tdt := range tdot.Structs {
 		if fs := tdt.fixedSize(); fs > 0 {
 			ensureImportFor(tdt.TName)
-			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[0])))"
+			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[0]))) ; p = " + s(fs)
 			tdt.TmplW = "buf.Write((*[" + s(fs) + "]byte)(unsafe.Pointer(me))[:])"
 		} else {
 			for i := 0; i < len(tdt.Fields); i++ {
@@ -33,39 +32,17 @@ func genDump() {
 				} else {
 					tdf.TmplR, tdf.TmplW = genForFieldOrVarOfNamedTypeRW(tdf.FName, "", tdt, tdf.typeIdent, "", 0, 0, tdf.taggedUnion)
 				}
-
-				if (i == len(tdt.Fields)-1) && (oneop || !ustr.Has(tdf.finalTypeIdent(), "[")) { // drop the very-last, thus ineffectual (and hence linter-triggering) assignment to p
-					lastp, lastpalt := ustr.Last(tdf.TmplR, " p++ "), ustr.Last(tdf.TmplR, " p +=")
-					if lastpalt > lastp {
-						lastp = lastpalt
-					}
-					if lastp > 0 {
-						off, offalt, offnope := ustr.Pos(tdf.TmplR[lastp:], ";"), ustr.Pos(tdf.TmplR[lastp:], "\n"), ustr.Pos(tdf.TmplR[lastp:], "}")
-						if offalt > 0 && offalt < off {
-							off = offalt
-						}
-						if off < 0 {
-							off = len(tdf.TmplR) - lastp
-						}
-						if offnope < 0 || offnope > off {
-							tdf.TmplR = tdf.TmplR[:lastp] + "/*" + tdf.TmplR[lastp:lastp+off] + "*/" + tdf.TmplR[lastp+off:]
-						}
-					}
-				}
 			}
 		}
-		tdt.ensureSizeHeur()
+		tdt.InitialBufSize = tdt.sizeHeur("me.")
 	}
 
-	filePathDst := filepath.Join(goPkgDirPath, genFileName)
+	genFileName = filepath.Join(goPkgDirPath, genFileName)
 	src, err := genViaTmpl()
 	if err == nil {
-		err = ufs.WriteBinaryFile(filePathDst, src)
+		err = ufs.WriteBinaryFile(genFileName, src)
 	}
-	if err != nil {
-		panic(err)
-	}
-	os.Stdout.WriteString("generated: " + filePathDst + "\n")
+	return err
 }
 
 func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDotStruct, typeName string, tmpVarPref string, numIndir int, iterDepth int, taggedUnion []string) (tmplR string, tmplW string) {
@@ -249,23 +226,27 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tds, tsyn, "", numIndir, iterDepth, taggedUnion)
 				tmplR = ustr.Replace(tmplR, "(*"+tsyn+")(unsafe.Pointer(", "(*"+typeName+")(unsafe.Pointer(")
 			} else {
+				var trpref string
 				if ustr.Pref(mfr, "v") {
 					ensureImportFor(typeName)
-					tmplR = mfr + "= " + typeName + "{} ; "
+					trpref = mfr + "= " + typeName + "{} ; "
 				}
-				tmplR += genLenR(nfr) + " ; if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
+				tmplR = genLenR(nfr) + " ; if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
 				for tspec := range ts {
 					if tspec.Name.Name == typeName {
-						tds.HasWData = true
+						// tds.HasWData = true
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
-							mfw = ustr.TrimL(mfw[1:len(mfw)-1], "*")
+							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')
 						}
-						tmplW = "if err = " + mfw + ".marshalTo(&data); err != nil { return } ; " + lf + " := " + cast + "(data.Len()) ; " + genLenW(nfr) + " ; data.WriteTo(buf)"
+						// tmplR = " /*foo1*/ " + tmplR + " /*foo2*/ "
+						tmplR = " ; { var off int ; if off, err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(data[p:]); err != nil { return } ; p += off } ; "
+						tmplW = "if err = " + mfw + ".marshalTo(buf); err != nil { return } ; "
 						break
 					}
 				}
+				tmplR = trpref + tmplR
 			}
 		}
 	}

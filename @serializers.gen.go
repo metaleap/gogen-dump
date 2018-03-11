@@ -101,7 +101,7 @@ func (me *embName) marshalTo(buf *bytes.Buffer) (err error) {
 }
 
 func (me *embName) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (24432)+(0)+(0)+(0)+(0)))
+	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.FirstName))+(8+(len(me.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -116,9 +116,7 @@ func (me *embName) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-func (me *embName) UnmarshalBinary(data []byte) (err error) {
-
-	var p int
+func (me *embName) unmarshalFrom(data []byte) (p int, err error) {
 
 	me.LeFix = *((*[3][4]fixed)(unsafe.Pointer(&data[p])))
 	p += 24432
@@ -186,7 +184,8 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 		if p++; data[p-1] != 0 {
 			if p++; data[p-1] != 0 {
 				if p++; data[p-1] != 0 {
-					v30 := (data[p] == 1) /* p++  */
+					v30 := (data[p] == 1)
+					p++
 					p20 = &v30
 				}
 				p10 = &p20
@@ -199,8 +198,13 @@ func (me *embName) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+func (me *embName) UnmarshalBinary(data []byte) (err error) {
+	_, err = me.unmarshalFrom(data)
+	return
+}
+
 func (me *embName) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (24432)+(0)+(0)+(0)+(0)))
+	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.FirstName))+(8+(len(me.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -230,10 +234,16 @@ func (me *fixed) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-func (me *fixed) UnmarshalBinary(data []byte) (err error) {
+func (me *fixed) unmarshalFrom(data []byte) (p int, err error) {
 
 	*me = *((*fixed)(unsafe.Pointer(&data[0])))
+	p = 2036
 
+	return
+}
+
+func (me *fixed) UnmarshalBinary(data []byte) (err error) {
+	_, err = me.unmarshalFrom(data)
 	return
 }
 
@@ -247,14 +257,9 @@ func (me *fixed) WriteTo(w io.Writer) (int64, error) {
 
 func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 
-	var data bytes.Buffer
-
-	if err = me.embName.marshalTo(&data); err != nil {
+	if err = me.embName.marshalTo(buf); err != nil {
 		return
 	}
-	lembName := (data.Len())
-	buf.Write((*[8]byte)(unsafe.Pointer(&lembName))[:])
-	data.WriteTo(buf)
 
 	if me.Age == nil {
 		buf.WriteByte(0)
@@ -361,24 +366,18 @@ func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 				} else {
 					buf.WriteByte(1)
 					pv01 := *t
-					if err = pv01.marshalTo(&data); err != nil {
+					if err = pv01.marshalTo(buf); err != nil {
 						return
 					}
-					lm0 := (data.Len())
-					buf.Write((*[8]byte)(unsafe.Pointer(&lm0))[:])
-					data.WriteTo(buf)
 				}
 			case []embName:
 				buf.WriteByte(6)
 				lm0 := (len(t))
 				buf.Write((*[8]byte)(unsafe.Pointer(&lm0))[:])
 				for i1 := 0; i1 < (lm0); i1++ {
-					if err = t[i1].marshalTo(&data); err != nil {
+					if err = t[i1].marshalTo(buf); err != nil {
 						return
 					}
-					li1 := (data.Len())
-					buf.Write((*[8]byte)(unsafe.Pointer(&li1))[:])
-					data.WriteTo(buf)
 				}
 			case []*embName:
 				buf.WriteByte(7)
@@ -390,12 +389,9 @@ func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 					} else {
 						buf.WriteByte(1)
 						pv02 := *t[i1]
-						if err = pv02.marshalTo(&data); err != nil {
+						if err = pv02.marshalTo(buf); err != nil {
 							return
 						}
-						li1 := (data.Len())
-						buf.Write((*[8]byte)(unsafe.Pointer(&li1))[:])
-						data.WriteTo(buf)
 					}
 				}
 			case []*float32:
@@ -472,7 +468,7 @@ func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 }
 
 func (me *testStruct) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (0)+(0)+(1)+(16)+(504)+(0)+(0)+(24)+(4072)+(0)+(0)+(0)+(0)))
+	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.embName.FirstName))+(8+(len(me.embName.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)+(4+8)+1+16+504+(1+(3*(2+2)))+8+24+4072+123+(8+(len(me.Hm.Hm.Any)*(1+2036))+(len(me.Hm.Hm.Any)*123))+(8+(len(me.Hm.Hm.Crikey)*(8+44)))+(8+(len(me.Hm.Foo)*(2*(8+(22*4)+(22*(3+(8+(33*(1+2)))))))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -487,16 +483,15 @@ func (me *testStruct) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
+func (me *testStruct) unmarshalFrom(data []byte) (p int, err error) {
 
-	var p int
-
-	lembName := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	if err = me.embName.UnmarshalBinary(data[p : p+lembName]); err != nil {
-		return
+	{
+		var off int
+		if off, err = me.embName.unmarshalFrom(data[p:]); err != nil {
+			return
+		}
+		p += off
 	}
-	p += lembName
 
 	{
 		var p00 ****uint
@@ -617,12 +612,13 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 					var p01 *embName
 					if p++; data[p-1] != 0 {
 						v11 := embName{}
-						lm0 := (*((*int)(unsafe.Pointer(&data[p]))))
-						p += 8
-						if err = v11.UnmarshalBinary(data[p : p+lm0]); err != nil {
-							return
+						{
+							var off int
+							if off, err = v11.unmarshalFrom(data[p:]); err != nil {
+								return
+							}
+							p += off
 						}
-						p += lm0
 						p01 = &v11
 					}
 					u = p01
@@ -634,12 +630,13 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 				p += 8
 				u = make([]embName, lm0)
 				for i1 := 0; i1 < (lm0); i1++ {
-					li1 := (*((*int)(unsafe.Pointer(&data[p]))))
-					p += 8
-					if err = u[i1].UnmarshalBinary(data[p : p+li1]); err != nil {
-						return
+					{
+						var off int
+						if off, err = u[i1].unmarshalFrom(data[p:]); err != nil {
+							return
+						}
+						p += off
 					}
-					p += li1
 				}
 				bm0 = u
 			case 7:
@@ -652,12 +649,13 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 						var p02 *embName
 						if p++; data[p-1] != 0 {
 							v12 := embName{}
-							li1 := (*((*int)(unsafe.Pointer(&data[p]))))
-							p += 8
-							if err = v12.UnmarshalBinary(data[p : p+li1]); err != nil {
-								return
+							{
+								var off int
+								if off, err = v12.unmarshalFrom(data[p:]); err != nil {
+									return
+								}
+								p += off
 							}
-							p += li1
 							p02 = &v12
 						}
 						u[i1] = p02
@@ -748,8 +746,13 @@ func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
+	_, err = me.unmarshalFrom(data)
+	return
+}
+
 func (me *testStruct) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (0)+(0)+(1)+(16)+(504)+(0)+(0)+(24)+(4072)+(0)+(0)+(0)+(0)))
+	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.embName.FirstName))+(8+(len(me.embName.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)+(4+8)+1+16+504+(1+(3*(2+2)))+8+24+4072+123+(8+(len(me.Hm.Hm.Any)*(1+2036))+(len(me.Hm.Hm.Any)*123))+(8+(len(me.Hm.Hm.Crikey)*(8+44)))+(8+(len(me.Hm.Foo)*(2*(8+(22*4)+(22*(3+(8+(33*(1+2)))))))))))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}

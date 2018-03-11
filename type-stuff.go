@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/go-leap/dev/go"
 	"github.com/go-leap/str"
 )
 
@@ -145,14 +144,16 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 		pkgname := sel.X.(*ast.Ident).Name
 		if tdot.Imps[pkgname] == nil {
 			tdot.Imps[pkgname] = &tmplDotPkgImp{ImportPath: pkgname}
-			if udevgo.PkgsByImP == nil {
-				if err := udevgo.RefreshPkgs(); err != nil {
-					panic(err)
+			pkg := goProg.Imported[pkgname]
+			if pkg == nil {
+				for pkgdep, pkginfo := range goProg.AllPackages {
+					if pkgdep.Name() == pkgname {
+						pkg = pkginfo
+						break
+					}
 				}
 			}
-			if pkgimppath := ustr.Fewest(udevgo.PkgsByName(pkgname), "/", ustr.Shortest); pkgimppath != "" {
-				tdot.Imps[pkgname].ImportPath = pkgimppath
-			}
+			tdot.Imps[pkgname].ImportPath = pkg.Pkg.Path()
 		}
 		return pkgname + "." + sel.Sel.Name, 0
 
@@ -172,13 +173,13 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 	panic(t)
 }
 
-func fixedSizeArrMult(arrTypeIdent string) (mult int, elemTypeIdent string) {
+func sizedArrMultAndElemType(arrTypeIdent string) (mult int, elemTypeIdent string) {
 	mult, elemTypeIdent = 1, arrTypeIdent
 	for elemTypeIdent[0] == '[' {
 		if i := ustr.Pos(elemTypeIdent, "]"); i < 0 {
 			return 1, ""
 		} else if i == 1 {
-			return 1, elemTypeIdent[2:]
+			return
 		} else if nulen, _ := strconv.Atoi(elemTypeIdent[1:i]); nulen <= 0 {
 			return 1, ""
 		} else if mult, elemTypeIdent = mult*nulen, elemTypeIdent[i+1:]; elemTypeIdent == "" {
@@ -189,7 +190,10 @@ func fixedSizeArrMult(arrTypeIdent string) (mult int, elemTypeIdent string) {
 }
 
 func fixedSizeForTypeSpec(typeIdent string) int {
-	mult, typeident := fixedSizeArrMult(typeIdent)
+	if ustr.Idx(typeIdent, '*') >= 0 || ustr.Has(typeIdent, "[]") || ustr.Has(typeIdent, "map[") || typeIdent == "string" { // early return quite often
+		return -1
+	}
+	mult, typeident := sizedArrMultAndElemType(typeIdent)
 	switch typeident {
 	case "bool", "uint8", "byte", "int8":
 		return mult * 1
@@ -219,7 +223,7 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	}
 	if tsyn := tSynonyms[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
-	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 {
+	} else if ustr.Idx(typeident, '*') >= 0 || ustr.Idx(typeident, '[') >= 0 || typeident == "string" {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
@@ -263,6 +267,62 @@ func ensureImportFor(typeSpec string) (pkgName []string) {
 		}
 	}
 	return nil
+}
+
+func typeSizeHeur(typeIdent string, expr string) string {
+	h, l := "", ""
+	mult, tident := sizedArrMultAndElemType(typeIdent)
+	if fs := fixedSizeForTypeSpec(tident); fs > 0 {
+		h = s(fs)
+	} else if tident[0] == '*' {
+		n := len(tident) - len(ustr.Skip(tident, '*'))
+		h = "(" + s(n) + "+" + typeSizeHeur(tident[n:], "") + ")"
+	} else if pclose := ustr.Idx(tident, ']'); tident[0] == '[' && pclose == 1 {
+		if expr != "" {
+			l = "len(" + expr + ") * "
+		} else {
+			l = optHeuriticLenSlices + " * "
+		}
+		h = "(8 + (" + l + typeSizeHeur(tident[2:], "") + "))"
+	} else if ustr.Pref(tident, "map[") {
+		if expr != "" {
+			l = "len(" + expr + ") * "
+		} else {
+			l = optHeuristicLenMaps + " * "
+		}
+		tval := tident[pclose+1:]
+		tkey := tident[4:pclose]
+		h = "(8 + (" + l + typeSizeHeur(tkey, "") + ") + (" + l + typeSizeHeur(tval, "") + "))"
+	} else if tident == "int" || tident == "uint" || tident == "uintptr" { // varints possibly not covered by above fixedSize handling
+		h = "8"
+	} else if tident == "string" {
+		if expr != "" {
+			l = "len(" + expr + ")"
+		} else {
+			l = optHeuristicLenStrings
+		}
+		h = "(8 + " + l + ")"
+	} else if tsyn := tSynonyms[tident]; tsyn != "" {
+		h = typeSizeHeur(tsyn, expr)
+	} else {
+		if expr != "" {
+			expr += "."
+		}
+		for _, tdt := range tdot.Structs {
+			if tdt.TName == tident {
+				h = tdt.sizeHeur(expr)
+				break
+			}
+		}
+	}
+
+	if h == "" {
+		h = optHeuristicSizeUnknowns
+	}
+	if mult > 1 {
+		h = "(" + s(mult) + "*" + h + ")"
+	}
+	return h
 }
 
 // // nicked from teh_cmc/gools/zerocopy:

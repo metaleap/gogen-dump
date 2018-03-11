@@ -5,6 +5,7 @@ import (
 	"golang.org/x/tools/go/loader"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-leap/dev/go"
 	"github.com/go-leap/fs"
@@ -12,14 +13,15 @@ import (
 )
 
 var (
-	genFileName  = "@serializers.gen.go"
-	tdot         = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
-	goPkgDirPath = tdot.ProgHint
-	typeNames    = []string{"fixed", "testStruct", "embName", "thisDoesntExist", "time.Duration", "time.Time"}
-	ts           = map[*ast.TypeSpec]*ast.StructType{}
-	tSynonyms    = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
+	genFileName = "@serializers.gen.go"
+	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
+	typeNames   = []string{"fixed", "testStruct", "embName", "thisDoesntExist"}
+	ts          = map[*ast.TypeSpec]*ast.StructType{}
+	tSynonyms   = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
 		"time.Duration": "int64",
 	}
+	goPkgDirPath = tdot.ProgHint
+	goProg       *loader.Program
 
 	// if false: varints are read-from/written-to directly but occupy 8 bytes in the stream.
 	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
@@ -28,9 +30,18 @@ var (
 	optVarintsInFixedSizeds = false // set to true by presence of command-line arg -varintsInFixedSizeds
 
 	optIgnoreUnknownTypeCases = false // set to true by presence of command-line arg -ignoreUnknownTypeCases
+
+	optHeuristicLenStrings = "44"
+
+	optHeuriticLenSlices = "33"
+
+	optHeuristicLenMaps = "22"
+
+	optHeuristicSizeUnknowns = "123"
 )
 
 func main() {
+	timestarted := time.Now()
 	if len(os.Args) > 1 {
 		if typeNames, goPkgDirPath = nil, os.Args[1]; len(os.Args) > 2 {
 			if ustr.Suff(os.Args[2], ".go") {
@@ -80,13 +91,14 @@ func main() {
 		panic("no .go files found in: " + goPkgDirPath)
 	}
 
-	goast := loader.Config{Cwd: goPkgDirPath}
-	goast.CreateFromFilenames(goPkgImpPath, gofilepaths...)
-	goprog, err := goast.Load()
+	goload := loader.Config{Cwd: goPkgDirPath}
+	goload.CreateFromFilenames(goPkgImpPath, gofilepaths...)
+	var err error
+	goProg, err = goload.Load()
 	if err != nil {
 		panic(err)
 	}
-	for _, gofile := range goprog.Package(goPkgImpPath).Files {
+	for _, gofile := range goProg.Package(goPkgImpPath).Files {
 		tdot.PName = gofile.Name.Name
 		for _, decl := range gofile.Decls {
 			if gd, _ := decl.(*ast.GenDecl); gd != nil {
@@ -106,7 +118,10 @@ func main() {
 	}
 	if collectTypes(); len(tdot.Structs) == 0 {
 		println("nothing to generate")
+	} else if err = genDump(); err != nil {
+		panic(err)
 	} else {
-		genDump()
+		timetaken := time.Now().Sub(timestarted)
+		os.Stdout.WriteString("generated methods for " + s(len(tdot.Structs)) + " structs in " + timetaken.String() + " to:\n" + genFileName + "\n")
 	}
 }

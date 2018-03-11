@@ -51,15 +51,19 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
+func (me *{{.TName}}) unmarshalFrom(data []byte) (p int, err error) {
 	{{if .TmplR}}
 	{{.TmplR}}
 	{{else}}
-	var p int
 	{{range .Fields}}
 	{{.TmplR}}
 	{{end}}
 	{{end}}
+	return
+}
+
+func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
+	_, err = me.unmarshalFrom(data)
 	return
 }
 
@@ -123,18 +127,15 @@ func (me *tmplDotStruct) fixedSize() int {
 	return me.fixedsize
 }
 
-func (me *tmplDotStruct) ensureSizeHeur() {
-	if me.InitialBufSize == "" {
-		if fs := me.fixedSize(); fs > 0 {
-			me.InitialBufSize = s(fs)
-		} else {
-			for _, tdf := range me.Fields {
-				me.InitialBufSize += "+(" + tdf.sizeHeur() + ")"
-			}
-			me.InitialBufSize = me.InitialBufSize[1:]
-		}
+func (me *tmplDotStruct) sizeHeur(exprPref string) string {
+	if fs := me.fixedSize(); fs > 0 {
+		return s(fs)
 	}
-	return
+	var s string
+	for _, tdf := range me.Fields {
+		s += "+" + tdf.sizeHeur(exprPref)
+	}
+	return s[1:]
 }
 
 type tmplDotField struct {
@@ -169,34 +170,14 @@ func (me *tmplDotField) fixedSize() int {
 	return me.fixedsize
 }
 
-func (me *tmplDotField) sizeHeur() string {
-	if me.sizeheur == "" {
-		me.sizeheur = "0"
-		if fs := me.fixedSize(); fs > 0 {
-			me.sizeheur = s(fs)
-		}
-		/*
-			mult, tident := fixedSizeArrMult(typeIdent)
-			if tident[0] == '*' {
-				heur = mult * (1 + genSizeHeuristic(tident[1:]))
-			} else if (tident[0] == '[' && tident[1] == ']') || (typeIdent[0] == '[' && typeIdent[1] == ']') {
-				heur = mult * (8 + genSizeHeuristic(tident[2:]))
-			} else if ustr.Pref(tident, "map[") {
-				heur = mult * (8 + genSizeHeuristic(""))
-			} else if tident == "string" {
-				heur = mult * (8 + 33)
-			} else if tident == "int" || tident == "uint" || tident == "uintptr" {
-				heur = mult * 8
-			} else {
-				for _, tdt := range tdot.Structs {
-					if tdt.TName == tident {
-						break
-					}
-				}
-			}
-		*/
+func (me *tmplDotField) sizeHeur(exprPref string) string {
+	if fs := me.fixedSize(); fs > 0 {
+		return s(fs)
 	}
-	return me.sizeheur
+	if exprPref != "" {
+		exprPref += me.FName
+	}
+	return typeSizeHeur(me.finalTypeIdent(), exprPref)
 }
 
 func genViaTmpl() (src []byte, err error) {
