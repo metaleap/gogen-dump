@@ -5,22 +5,22 @@ import (
 	"time"
 )
 
-type gameWorld struct {
+type simWorld struct {
 	Cities [123]city
 }
 
 type city struct {
-	Name string
-	// ClosestTo *city
+	Name      string
+	ClosestTo *city
 	Companies []company
 	Families  []family
 	Schools   []school
 }
 
 type company struct {
-	// Suppliers []*company
-	// Clients   []*company
-	Staff []*person
+	Suppliers []*company
+	Clients   []*company
+	Staff     []*person
 }
 
 type school struct {
@@ -30,26 +30,29 @@ type school struct {
 
 type family struct {
 	LastName string
-	// Pets     map[string]petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
+	Pets     map[string]petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
 }
 
 type person struct {
-	FirstName string
-	// Family      *family
-	// DateOfBirth time.Time
-	// Parents     [2]*person
-	// FavPet      petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
-	// Top5Hobbies [5]hobby
+	FirstName   string
+	Family      *family
+	DateOfBirth time.Time
+	Parents     [2]*person
+	FavPet      petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
+	Top5Hobbies [5]hobby
 }
 
 type hobby struct {
-	Name      string
-	Outdoorsy bool
-	AvgPerDay struct {
-		TimeNeededMinMax  [2]time.Duration
-		CostInCentsMinMax [2]uint16
+	Name            string
+	PopularityScore float64 // starting here, naive byte-count until Description string would be 32 but eg. for gc/amd64 is a size of 40 bytes incl padding
+	AvgPerDay       struct {
+		TimeNeededMinMax                        [2]time.Duration
+		JustNeedToCheckPaddingAndAlignmentsHere bool
+		CostInCentsMinMax                       [2]uint16
 	}
-	GroupSizeMinMax [2]uint8
+	GroupSizeMinMax [2]uint
+	Outdoorsy       bool
+	Description     string
 }
 
 type petAnimal interface {

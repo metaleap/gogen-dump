@@ -164,7 +164,7 @@ func typeIdentAndFixedSize(t ast.Expr) (typeSpec string, fixedSize int) {
 		return "", -1
 
 	} else if struc, _ := t.(*ast.StructType); struc != nil {
-		println("skipping a field: indirected (via ptr, slice, etc) inline in-struct anonymous sub-structs not supported (only directly placed ones are) — mark it `gogendump:\"-\"` to not see this message.")
+		println("skipping a field: indirected (via ptr, slice, etc) inline in-struct anonymous sub-structs not supported (only directly placed ones are) — mark it `gogendump:\"-\"` to not show this message again.")
 		return "", -1
 
 	} else if ch, _ := t.(*ast.ChanType); ch != nil {
@@ -206,20 +206,20 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 	case "complex128":
 		return mult * 16
 	case "uint":
-		if optVarintsInFixedSizeds {
-			return mult * int(unsafe.Sizeof(uint(0)))
+		if optVarintsNotFixedSize {
+			return -1
 		}
-		return -1
+		return mult * int(unsafe.Sizeof(uint(0)))
 	case "uintptr":
-		if optVarintsInFixedSizeds {
-			return mult * int(unsafe.Sizeof(uintptr(0)))
+		if optVarintsNotFixedSize {
+			return -1
 		}
-		return -1
+		return mult * int(unsafe.Sizeof(uintptr(0)))
 	case "int":
-		if optVarintsInFixedSizeds {
-			return mult * int(unsafe.Sizeof(int(0)))
+		if optVarintsNotFixedSize {
+			return -1
 		}
-		return -1
+		return mult * int(unsafe.Sizeof(int(0)))
 	}
 	if tsyn := typeSyns[typeident]; tsyn != "" {
 		return mult * fixedSizeForTypeSpec(tsyn)
@@ -269,21 +269,23 @@ func ensureImportFor(typeSpec string) (pkgName []string) {
 	return nil
 }
 
-func typeSizeHeur(typeIdent string, expr string) string {
-	h, l := "", ""
+func typeSizeHeur(typeIdent string, expr string) (heur string) {
 	mult, tident := sizedArrMultAndElemType(typeIdent)
-	if fs := fixedSizeForTypeSpec(tident); fs > 0 {
-		h = s(fs)
+	if mult > 1 {
+		expr = ""
+	}
+	if l, fs := "", fixedSizeForTypeSpec(tident); fs > 0 {
+		heur = s(fs)
 	} else if tident[0] == '*' {
 		n := len(tident) - len(ustr.Skip(tident, '*'))
-		h = "(" + s(n) + "+" + typeSizeHeur(tident[n:], "") + ")"
+		heur = "(" + s(n) + "+" + typeSizeHeur(tident[n:], "") + ")"
 	} else if pclose := ustr.IdxBMatching(tident, ']', '['); tident[0] == '[' && pclose == 1 {
 		if expr != "" {
 			l = "len(" + expr + ") * "
 		} else {
 			l = optHeuriticLenSlices + " * "
 		}
-		h = "(8 + (" + l + typeSizeHeur(tident[2:], "") + "))"
+		heur = "(8 + (" + l + typeSizeHeur(tident[2:], "") + "))"
 	} else if ustr.Pref(tident, "map[") {
 		if expr != "" {
 			l = "len(" + expr + ") * "
@@ -291,37 +293,37 @@ func typeSizeHeur(typeIdent string, expr string) string {
 			l = optHeuristicLenMaps + " * "
 		}
 		tkey, tval := tident[4:pclose], tident[pclose+1:]
-		h = "(8 + (" + l + typeSizeHeur(tkey, "") + ") + (" + l + typeSizeHeur(tval, "") + "))"
+		heur = "(8 + (" + l + typeSizeHeur(tkey, "") + ") + (" + l + typeSizeHeur(tval, "") + "))"
 	} else if tident == "int" || tident == "uint" || tident == "uintptr" { // varints possibly not covered by above fixedSize handling
-		h = "8"
+		heur = "8"
 	} else if tident == "string" {
 		if expr != "" {
 			l = "len(" + expr + ")"
 		} else {
 			l = optHeuristicLenStrings
 		}
-		h = "(8 + " + l + ")"
+		heur = "(8 + " + l + ")"
 	} else if tsyn := typeSyns[tident]; tsyn != "" {
-		h = typeSizeHeur(tsyn, expr)
+		heur = typeSizeHeur(tsyn, expr)
 	} else {
 		if expr != "" {
 			expr += "."
 		}
 		for _, tdt := range tdot.Structs {
 			if tdt.TName == tident {
-				h = tdt.sizeHeur(expr)
+				heur = tdt.sizeHeur(expr)
 				break
 			}
 		}
 	}
 
-	if h == "" {
-		h = optHeuristicSizeUnknowns
+	if heur == "" {
+		heur = optHeuristicSizeUnknowns
 	}
 	if mult > 1 {
-		h = "(" + s(mult) + "*" + h + ")"
+		heur = "(" + s(mult) + "*(" + heur + "))"
 	}
-	return h
+	return
 }
 
 // // nicked from teh_cmc/gools/zerocopy:

@@ -14,7 +14,7 @@ var (
 
 func genDump() error {
 	for _, tdt := range tdot.Structs {
-		if fs := tdt.fixedSize(); fs > 0 {
+		if fs := tdt.fixedSize(); fs > 0 && !optNoFixedSizeCode {
 			ensureImportFor(tdt.TName)
 			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[p]))) ; p += " + s(fs)
 			tdt.TmplW = "buf.Write((*[" + s(fs) + "]byte)(unsafe.Pointer(me))[:])"
@@ -22,7 +22,7 @@ func genDump() error {
 			for i := 0; i < len(tdt.Fields); i++ {
 				tdf := tdt.Fields[i]
 				oneop := tdf.fixedsizeExtNumSkip > 0
-				if oneop {
+				if oneop && !optNoFixedSizeCode {
 					addr, fse := "&me."+tdf.FName, s(tdf.fixedsizeExt)
 					if i += tdf.fixedsizeExtNumSkip; tdf.typeIdent[0] == '[' {
 						addr += "[0]"
@@ -168,25 +168,29 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 
 				tmplR += "\n\t}"
 				tmplW += "\n\t}"
-			} else if afs := s(arrfixedsize); arrfixedsize > 0 {
+			} else if afs := s(arrfixedsize); arrfixedsize > 0 && !optNoFixedSizeCode {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
 			} else {
 				offr, offw := len(tmplR), len(tmplW)
-				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+				if valtypespec == "byte" || valtypespec == "uint8" {
+					tmplR += "copy(" + ustr.Drop(mfr, ':') + "[:" + slen + "], data[p:" + slen + "]) ; p += " + slen
+				} else {
+					tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
+					tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
+					tmplR += "\n\t\t" + tr + "\n\t}"
+				}
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
-				tmplR += "\n\t\t" + tr + "\n\t}"
 				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw + "\n\t}"
 
-				if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 && optFixedSizeMaxSizeInGB > 0 {
+				if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 && optFixedSizeMaxSizeInGB > 0 && !optNoFixedSizeCode {
 					sfs, fixedsizemax := s(fs), int(optFixedSizeMaxSizeInGB*(1024*1024*1024))
 					maxlen := (fixedsizemax / fs) + 1
-					tmplW = tmplW[:offw] + "; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
+					tmplW = tmplW[:offw] + " ; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
 						" buf.Write((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
 						" } else { " + tmplW[offw:] + "} ; "
-					tmplR = tmplR[:offr] + " if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
+					tmplR = tmplR[:offr] + " ; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
 						" lmul := " + sfs + "*" + slen + " ; copy(((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:lmul], data[p:p+(lmul)])  ; p += (lmul) " +
 						" } else { " + tmplR[offr:] + " } ; "
 				}
@@ -206,15 +210,14 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			if optIgnoreUnknownTypeCases {
 				tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
 			} else {
-				tdot.Imps["fmt"] = &tmplDotPkgImp{ImportPath: "fmt", Used: true}
-				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\treturn fmt.Errorf(\"" + tds.TName + "." + ustr.Until(ustr.TrimPref(altNoMe, "me."), "[") + ": type %T not mentioned in tagged-union field-tag\", t" + ")"
+				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\tpanic(\"" + tds.TName + ".marshalTo: while attempting to serialize a non-nil " + typeName + ", encountered a concrete type not mentioned in corresponding tagged-union field-tag\")\n\t\t\t// panic(fmt.Sprintf(\"%T\", t))"
 			}
 			tmplR += "\n\t}}"
 			tmplW += "\n\t}}"
 		} else {
 			// OTHER
 
-			if fs := fixedSizeForTypeSpec(typeName); fs > 0 {
+			if fs := fixedSizeForTypeSpec(typeName); fs > 0 && !optNoFixedSizeCode {
 				ensureImportFor(typeName)
 				tmplR = mfr + "= *((*" + typeName + ")(unsafe.Pointer(&data[p]))) ; p += " + s(fs)
 				if mfw[0] == '*' {
@@ -237,8 +240,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplR = genLenR(nfr) + " ; if " + lf + " > 0 { if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf + " }"
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
+				var islocalserializablestruct bool
 				for tspec := range typeDefs {
-					if tspec.Name.Name == typeName {
+					if islocalserializablestruct = tspec.Name.Name == typeName; islocalserializablestruct {
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')
 						}
@@ -248,6 +252,10 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					}
 				}
 				tmplR = trpref + tmplR
+				if wk := typeName + "·" + nf; (!islocalserializablestruct) && ustr.IdxB(typeName, '.') < 0 && !typeWarned[wk] {
+					typeWarned[wk] = true
+					println("take note: in-package type `" + typeName + "` will be (de)serialized (via `" + nf + "`) by `MarshalBinary`/`UnmarshalBinary` (instead of `marshalTo`/`unmarshalFrom`) because `gogen-dump` has not been instructed to generate serialization code for it. if this will compile at all, it will likely still not furnish the intended outcome.")
+				}
 			}
 		}
 	}

@@ -17,13 +17,14 @@ import (
 var (
 	genFileName = "@serializers.gen.go"
 	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
-	typeNames   = []string{"fixedSize" /*, "gameWorld", "city", "company", "school", "family"*/, "person", "hobby", "pet", "petPiranha", "petCat", "petDog"}
+	typeNames   = []string{"fixedSize", "simWorld", "city", "company", "school", "family", "person", "hobby", "pet", "petPiranha", "petCat", "petDog", "petHamster"}
 	typeDefs    = map[*ast.TypeSpec]*ast.StructType{}
 	typeObjs    = map[string]types.Type{}
 	typeSizes   types.Sizes
 	typeSyns    = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
 		"time.Duration": "int64",
 	}
+	typeWarned   = map[string]bool{}
 	goPkgDirPath = tdot.ProgHint
 	goProg       *loader.Program
 
@@ -31,7 +32,9 @@ var (
 	// if true: also occupy 8 bytes in stream, but expressly converted from/to uint64/int64 as applicable
 	optSafeVarints = false // set to true by presence of a command-line arg -safeVarints
 
-	optVarintsInFixedSizeds = false // set to true by presence of command-line arg -varintsInFixedSizeds
+	optNoFixedSizeCode = false // set to true by presence of command-line arg -noFixedSizeCode
+
+	optVarintsNotFixedSize = false // set to true by presence of command-line arg -varintsNotFixedSize
 
 	optIgnoreUnknownTypeCases = false // set to true by presence of command-line arg -ignoreUnknownTypeCases
 
@@ -47,7 +50,6 @@ var (
 )
 
 func main() {
-	typeSizes = types.SizesFor(build.Default.Compiler, build.Default.GOARCH)
 	timestarted := time.Now()
 	if len(os.Args) > 1 {
 		if typeNames, goPkgDirPath = nil, os.Args[1]; len(os.Args) > 2 {
@@ -63,8 +65,8 @@ func main() {
 					switch tn {
 					case "-safeVarints", "--safeVarints":
 						optSafeVarints, ditch = true, true
-					case "-varintsInFixedSizeds", "--varintsInFixedSizeds":
-						optVarintsInFixedSizeds, ditch = true, true
+					case "-varintsNotFixedSize", "--varintsNotFixedSize":
+						optVarintsNotFixedSize, ditch = true, true
 					case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
 						optIgnoreUnknownTypeCases, ditch = true, true
 					default:
@@ -98,6 +100,10 @@ func main() {
 		panic("no .go files found in: " + goPkgDirPath)
 	}
 
+	if typeSizes = types.SizesFor(build.Default.Compiler, build.Default.GOARCH); typeSizes == nil && (!optNoFixedSizeCode) {
+		optNoFixedSizeCode = true
+		println("fixed-size optimizations won't be generated due to lack of `go/types` support for Go compiler `" + build.Default.Compiler + "` — use `-noFixedSizeCode` to not show this message again.")
+	}
 	goload := loader.Config{Cwd: goPkgDirPath}
 	goload.CreateFromFilenames(goPkgImpPath, gofilepaths...)
 	var err error

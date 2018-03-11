@@ -102,15 +102,17 @@ type tmplDotPkgImp struct {
 type tmplDotStruct struct {
 	TName          string
 	Fields         []*tmplDotField
-	TmplR          string // only if fixedSize() > 0
-	TmplW          string // only if fixedSize() > 0
+	TmplR          string // only if fixedSize() > 0 && !optNoFixedSizeCode
+	TmplW          string // only if fixedSize() > 0 && !optNoFixedSizeCode
 	InitialBufSize string
 
-	fixedsize int
+	fixedsize   int
+	sizeheuring bool
 }
 
 func (me *tmplDotStruct) fixedSize() int {
 	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
+		me.fixedsize = -1 // in case of recursive type structures
 		isfixedsize := true
 		for _, fld := range me.Fields {
 			if fs := fld.fixedSize(); fs < 0 {
@@ -121,16 +123,19 @@ func (me *tmplDotStruct) fixedSize() int {
 			}
 		}
 		if isfixedsize { // so far we really just verified fixed-size-ness but to get the correct size, need to account for alignments/paddings instead of naively summing field sizes
-			me.fixedsize = int(typeSizes.Sizeof(typeObjs[me.TName]))
-		}
-		if me.fixedsize <= 0 {
-			me.fixedsize = -1
+			if me.fixedsize = int(typeSizes.Sizeof(typeObjs[me.TName])); me.fixedsize == 0 {
+				me.fixedsize = -1
+			}
 		}
 	}
 	return me.fixedsize
 }
 
 func (me *tmplDotStruct) sizeHeur(exprPref string) string {
+	if me.sizeheuring {
+		return optHeuristicSizeUnknowns
+	}
+	me.sizeheuring = true
 	if fs := me.fixedSize(); fs > 0 {
 		return s(fs)
 	}
@@ -138,6 +143,7 @@ func (me *tmplDotStruct) sizeHeur(exprPref string) string {
 	for _, tdf := range me.Fields {
 		s += "+" + tdf.sizeHeur(exprPref)
 	}
+	me.sizeheuring = false
 	return s[1:]
 }
 
@@ -191,6 +197,8 @@ func genViaTmpl() (src []byte, err error) {
 			src = buf.Bytes()
 			if srcfmt, errfmt := format.Source(src); errfmt == nil {
 				src = srcfmt
+			} else {
+				println("be fore-armed — the generated code could not be formatted, so it won't compile either:\n\t" + errfmt.Error())
 			}
 		}
 	}
