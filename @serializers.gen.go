@@ -100,6 +100,7 @@ func (me *embName) marshalTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
+// MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *embName) MarshalBinary() (data []byte, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.FirstName))+(8+(len(me.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)))
 	if err = me.marshalTo(buf); err == nil {
@@ -108,6 +109,7 @@ func (me *embName) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 func (me *embName) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
@@ -198,11 +200,13 @@ func (me *embName) unmarshalFrom(data []byte) (p int, err error) {
 	return
 }
 
+// UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` into `me`.
 func (me *embName) UnmarshalBinary(data []byte) (err error) {
 	_, err = me.unmarshalFrom(data)
 	return
 }
 
+// WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *embName) WriteTo(w io.Writer) (int64, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.FirstName))+(8+(len(me.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)))
 	if err := me.marshalTo(buf); err != nil {
@@ -218,6 +222,7 @@ func (me *fixed) marshalTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
+// MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *fixed) MarshalBinary() (data []byte, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 2036))
 	if err = me.marshalTo(buf); err == nil {
@@ -226,6 +231,7 @@ func (me *fixed) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 func (me *fixed) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
@@ -242,11 +248,13 @@ func (me *fixed) unmarshalFrom(data []byte) (p int, err error) {
 	return
 }
 
+// UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` into `me`.
 func (me *fixed) UnmarshalBinary(data []byte) (err error) {
 	_, err = me.unmarshalFrom(data)
 	return
 }
 
+// WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *fixed) WriteTo(w io.Writer) (int64, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 2036))
 	if err := me.marshalTo(buf); err != nil {
@@ -467,6 +475,7 @@ func (me *testStruct) marshalTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
+// MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *testStruct) MarshalBinary() (data []byte, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.embName.FirstName))+(8+(len(me.embName.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)+(4+8)+1+16+504+(1+(3*(2+2)))+8+24+4072+123+(8+(len(me.Hm.Hm.Any)*(1+2036))+(len(me.Hm.Hm.Any)*123))+(8+(len(me.Hm.Hm.Crikey)*(8+44)))+(8+(len(me.Hm.Foo)*(2*(8+(22*4)+(22*(3+(8+(33*(1+2)))))))))))
 	if err = me.marshalTo(buf); err == nil {
@@ -475,6 +484,7 @@ func (me *testStruct) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 func (me *testStruct) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
@@ -746,11 +756,13 @@ func (me *testStruct) unmarshalFrom(data []byte) (p int, err error) {
 	return
 }
 
+// UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` into `me`.
 func (me *testStruct) UnmarshalBinary(data []byte) (err error) {
 	_, err = me.unmarshalFrom(data)
 	return
 }
 
+// WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *testStruct) WriteTo(w io.Writer) (int64, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 24432+(8+len(me.embName.FirstName))+(8+(len(me.embName.MiddleNames)*(3+(5*(1+(8+44))))))+(2+(8+44))+(3+1)+(4+8)+1+16+504+(1+(3*(2+2)))+8+24+4072+123+(8+(len(me.Hm.Hm.Any)*(1+2036))+(len(me.Hm.Hm.Any)*123))+(8+(len(me.Hm.Hm.Crikey)*(8+44)))+(8+(len(me.Hm.Foo)*(2*(8+(22*4)+(22*(3+(8+(33*(1+2)))))))))))
 	if err := me.marshalTo(buf); err != nil {

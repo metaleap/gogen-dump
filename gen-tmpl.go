@@ -35,6 +35,7 @@ func (me *{{.TName}}) marshalTo(buf *bytes.Buffer) (err error) {
 	return
 }
 
+// MarshalBinary implements ` + "`" + `encoding.BinaryMarshaler` + "`" + ` by serializing ` + "`" + `me` + "`" + ` into ` + "`" + `data` + "`" + `.
 func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, {{.InitialBufSize}}))
 	if err = me.marshalTo(buf); err == nil {
@@ -43,6 +44,7 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// ReadFrom implements ` + "`" + `io.ReaderFrom` + "`" + ` by deserializing from ` + "`" + `r` + "`" + ` into ` + "`" + `me` + "`" + `.
 func (me *{{.TName}}) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
@@ -62,11 +64,13 @@ func (me *{{.TName}}) unmarshalFrom(data []byte) (p int, err error) {
 	return
 }
 
+// UnmarshalBinary implements ` + "`" + `encoding.BinaryUnmarshaler` + "`" + ` by deserializing from ` + "`" + `data` + "`" + ` into ` + "`" + `me` + "`" + `.
 func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	_, err = me.unmarshalFrom(data)
 	return
 }
 
+// WriteTo implements ` + "`" + `io.WriterTo` + "`" + ` by serializing ` + "`" + `me` + "`" + ` to ` + "`" + `w` + "`" + `.
 func (me *{{.TName}}) WriteTo(w io.Writer) (int64, error) {
 	buf := bytes.NewBuffer(make([]byte, 0, {{.InitialBufSize}}))
 	if err := me.marshalTo(buf); err != nil {
