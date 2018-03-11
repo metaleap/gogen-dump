@@ -59,3 +59,45 @@ type embName struct {
 	TriState    ***bool
 	Ch          chan bool
 }
+
+type buff struct{ b []byte }
+
+func (me *buff) bytes() []byte {
+	return me.b
+}
+
+func (me *buff) writeByte(b byte) {
+	l, c := len(me.b), cap(me.b)
+	if l == c {
+		old := me.b
+		me.b = make([]byte, l+1, c+c)
+		copy(me.b[:l], old)
+	} else {
+		me.b = me.b[:l+1]
+	}
+	me.b[l] = b
+}
+
+func (me *buff) write(b []byte) {
+	l, c, n := len(me.b), cap(me.b), len(b)
+	if ln := l + n; ln > c {
+		old := me.b
+		me.b = make([]byte, ln, c+c)
+		copy(me.b[:l], old)
+	} else {
+		me.b = me.b[:ln]
+	}
+	copy(me.b[l:], b)
+}
+
+func (me *buff) writeString(b string) {
+	l, c, n := len(me.b), cap(me.b), len(b)
+	if ln := l + n; ln > c {
+		old := me.b
+		me.b = make([]byte, ln, c+c)
+		copy(me.b[:l], old)
+	} else {
+		me.b = me.b[:ln]
+	}
+	copy(me.b[l:], b)
+}

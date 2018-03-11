@@ -15,7 +15,7 @@ import (
 var (
 	genFileName = "@serializers.gen.go"
 	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
-	typeNames   = []string{"fixed", "testStruct", "embName", "thisDoesntExist"}
+	typeNames   = []string{"fixed", "testStruct", "embName"}
 	ts          = map[*ast.TypeSpec]*ast.StructType{}
 	tSynonyms   = map[string]string{ // added to this at runtime: any -foo=bar args, plus parsed in-package type synonyms + type aliases
 		"time.Duration": "int64",
@@ -114,6 +114,19 @@ func main() {
 					}
 				}
 			}
+		}
+	}
+	for _, tn := range typeNames {
+		found := len(tSynonyms[tn]) > 0
+		if !found {
+			for t := range ts {
+				if found = (t.Name.Name == tn); found {
+					break
+				}
+			}
+		}
+		if !found {
+			println(tn + ": type not found")
 		}
 	}
 	if collectTypes(); len(tdot.Structs) == 0 {

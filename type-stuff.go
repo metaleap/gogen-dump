@@ -290,8 +290,7 @@ func typeSizeHeur(typeIdent string, expr string) string {
 		} else {
 			l = optHeuristicLenMaps + " * "
 		}
-		tval := tident[pclose+1:]
-		tkey := tident[4:pclose]
+		tkey, tval := tident[4:pclose], tident[pclose+1:]
 		h = "(8 + (" + l + typeSizeHeur(tkey, "") + ") + (" + l + typeSizeHeur(tval, "") + "))"
 	} else if tident == "int" || tident == "uint" || tident == "uintptr" { // varints possibly not covered by above fixedSize handling
 		h = "8"
