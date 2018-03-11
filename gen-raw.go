@@ -171,32 +171,24 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
-			} else if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 && 0 > 1 {
-				sfs := s(fs)
-				fixedsizemax := ((1024 * 1024 * 1024) * int(optFixedSizeMaxSizeInGB)) - 1
-				tmplR += "if " + slen + " > 0 { " +
-					" copy(((*[" + s(fixedsizemax) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:" + sfs + "*" + slen + "], data[p:p+(" + sfs + "*" + slen + ")]) " +
-					" ; p += (" + sfs + "*" + slen + ") }"
-				tmplW += "if " + slen + " > 0 { " +
-					" buf.Write((*[" + s(fixedsizemax) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
-					" }"
 			} else {
-				offw := len(tmplW)
+				offr, offw := len(tmplR), len(tmplW)
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tmplW += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
 				tr, _ := genForFieldOrVarOfNamedTypeRW(idx, mfr, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
-				tmplR += "\n\t\t" + tr
+				tmplR += "\n\t\t" + tr + "\n\t}"
 				_, tw := genForFieldOrVarOfNamedTypeRW(idx, mfw+"["+idx+"]", tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
-				tmplW += "\n\t\t" + tw
-				tmplR += "\n\t}"
-				tmplW += "\n\t}"
+				tmplW += "\n\t\t" + tw + "\n\t}"
 
-				if fs = fixedSizeForTypeSpec(valtypespec); fs > 0 && optFixedSizeMaxSizeInGB > 0 {
+				if fs := fixedSizeForTypeSpec(valtypespec); fs > 0 && optFixedSizeMaxSizeInGB > 0 {
 					sfs, fixedsizemax := s(fs), int(optFixedSizeMaxSizeInGB*(1024*1024*1024))
 					maxlen := (fixedsizemax / fs) + 1
 					tmplW = tmplW[:offw] + "; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
 						" buf.Write((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfw, ':') + "[0]))[:" + sfs + "*" + slen + "]) " +
 						" } else { " + tmplW[offw:] + "} ; "
+					tmplR = tmplR[:offr] + " if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
+						" lmul := " + sfs + "*" + slen + " ; copy(((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:lmul], data[p:p+(lmul)])  ; p += (lmul) " +
+						" } else { " + tmplR[offr:] + " } ; "
 				}
 			}
 		} else if len(taggedUnion) > 0 {

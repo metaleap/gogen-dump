@@ -524,9 +524,15 @@ func (me *petPiranha) unmarshalFrom(pos *int, data []byte) (err error) {
 		lm0 := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
 		bm0 = make([]fixedSize, lm0)
-		for i1 := 0; i1 < (lm0); i1++ {
-			bm0[i1] = *((*fixedSize)(unsafe.Pointer(&data[p])))
-			p += 3384
+		if (lm0) > 0 && (lm0) < 634600 {
+			lmul := 3384 * (lm0)
+			copy(((*[2147483647]byte)(unsafe.Pointer(&bm0[0])))[0:lmul], data[p:p+(lmul)])
+			p += (lmul)
+		} else {
+			for i1 := 0; i1 < (lm0); i1++ {
+				bm0[i1] = *((*fixedSize)(unsafe.Pointer(&data[p])))
+				p += 3384
+			}
 		}
 		me.Weird[bk0] = bm0
 	}
