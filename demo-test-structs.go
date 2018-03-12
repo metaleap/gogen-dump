@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"sort"
 	"time"
 )
@@ -195,4 +196,9 @@ func (me *bytesBuffer) writeString(b string) {
 		me.b = me.b[:ln]
 	}
 	copy(me.b[l:], b)
+}
+
+func (me *bytesBuffer) writeTo(w io.Writer) (int64, error) {
+	n, err := w.Write(me.b)
+	return int64(n), err
 }
