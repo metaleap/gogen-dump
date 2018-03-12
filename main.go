@@ -46,7 +46,7 @@ var (
 
 	optHeuristicSizeUnknowns = "234"
 
-	optFixedSizeMaxSizeInGB = 2 // 1024 = 1TB, up to 1048576 = 1PB — this amount is never really allocated (if not strictly needed) and only matters for the specific case of dynamic-length slices of fixed-size items, where this describes the theoretically-supported (by generated de/serialization code) upper bound of total RAM cost for the entire slice
+	optFixedSizeMaxSizeInGB = 2 // 1024 = 1TB, up to 1048576 = 1PB — this amount is never really allocated (if not strictly needed) and only matters for the specific case of dynamic-length slices of fixed-size elems, where this describes the theoretically-supported (by generated de/serialization code) upper bound of total RAM cost for the entire slice — whenever exceeded, instead of a single bytes-copy-op a normal per-elem iteration runs
 )
 
 func main() {

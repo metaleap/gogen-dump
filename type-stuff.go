@@ -8,6 +8,8 @@ import (
 	"unsafe"
 
 	"github.com/go-leap/str"
+
+	"github.com/cespare/xxhash"
 )
 
 func collectTypes() {
@@ -58,6 +60,47 @@ func collectTypes() {
 			}
 		}
 	}
+
+	// prep some summary comments
+	var hashinput bytesBuffer
+	add4hash := func(s string) { hashinput.writeString(s) }
+	for _, tds := range tdot.Structs {
+		hashinput = bytesBuffer{}
+		add4hash(s(len(tds.Fields)))
+		for _, tdf := range tds.Fields {
+			fs := tdf.fixedSize()
+			add4hash(s(fs))
+			if len(tdf.taggedUnion) > 0 {
+				tdf.Comment = ustr.Join(tdf.taggedUnion, " | ")
+			} else {
+				tdf.Comment = tdf.finalTypeIdent()
+			}
+			add4hash(tdf.Comment)
+			if fs > 0 {
+				tdf.Comment += ", " + sizeStr(fs)
+			}
+			if tdf.fixedsizeExtNumSkip > 0 {
+				tdf.Comment += ", begins fixed-size span of ~" + sizeStr(tdf.fixedsizeExt) + " (+padding/alignment..) that co-opts the next " + s(tdf.fixedsizeExtNumSkip) + " field(s)"
+			}
+			add4hash(s(tdf.fixedsizeExtNumSkip) + s(tdf.fixedsizeExt))
+		}
+		tds.Comment = s(len(tds.Fields)) + " field(s)"
+		fs := tds.fixedSize()
+		if fs > 0 {
+			tds.Comment += ", always " + sizeStr(fs)
+		}
+		add4hash(s(fs))
+		xxh := xxhash.New()
+		hashinput.writeTo(xxh)
+		tds.StructuralHash = xxh.Sum64()
+	}
+}
+
+func sizeStr(size int) string {
+	if size < 10000 {
+		return s(size) + "b"
+	}
+	return s(size/1024) + "kb"
 }
 
 func collectFields(st *ast.StructType) (fields []*tmplDotField) {

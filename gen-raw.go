@@ -167,13 +167,12 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
 				tmplR += "\n\t\t" + ustr.Drop(mfr, ':') + "[b" + mk + "] = b" + mv
-				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tds, keytypespec, "", 0, iterDepth+1, nil)
+				tmplR += "\n\t}"
 
+				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tds, keytypespec, "", 0, iterDepth+1, nil)
 				tmplW += "\n\t\t" + tw
 				_, tw = genForFieldOrVarOfNamedTypeRW(mv, mv, tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplW += "\n\t\t" + tw
-
-				tmplR += "\n\t}"
 				tmplW += "\n\t}"
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 && !optNoFixedSizeCode {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
