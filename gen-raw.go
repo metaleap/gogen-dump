@@ -55,8 +55,8 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		}
 	}
 	if numIndir > 0 {
-		mfr = "v" + s(numIndir) + s(iterDepth) + ":"
-		mfw = "pv" + s(numIndir-1) + s(iterDepth) //  "(" + ustr.Times("*", numIndir) + mfw + ")"
+		mfr = "v" + s(numIndir) + s(iterDepth) + s(len(taggedUnion)) + ":"
+		mfw = "pv" + s(numIndir-1) + s(iterDepth) + s(len(taggedUnion)) //  "(" + ustr.Times("*", numIndir) + mfw + ")"
 	} else if altNoMe == "" && tmpVarPref != "" {
 		mfr = tmpVarPref // + nfr
 	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "k") || ustr.Pref(nf, "m")) {
@@ -80,7 +80,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		tmplW = lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; buf.WriteString(" + mfw + ")"
 		tmplR = genLenR(nfr) + " ; " + mfr + "= string(data[p : p+" + lf + "]) ; p += " + lf
 		if iterDepth == 0 {
-			tmplR, tmplW = "{ "+tmplR+" }", "{ "+tmplW+" }"
+			if tmplW = "{ " + tmplW + " }"; !ustr.Pref(mfr, "v") {
+				tmplR = "{ " + tmplR + " }"
+			}
 		}
 	case "int16", "uint16":
 		tmplW = genSizedW(nfr, mfw, "2")
@@ -105,30 +107,32 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			// POINTER
 
 			numindir := len(typeName) - len(ustr.Skip(typeName, '*'))
-			tn := typeName[numindir:]
+			tn, id := typeName[numindir:], s(iterDepth)+s(len(taggedUnion)) //+s(numindir)+s(numIndir)
 			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, "", numindir, iterDepth, taggedUnion)
+			// haspv0:=ustr.Pref(tn,"[]") ||tn=="bool"||tn=="byte"||tn=="uint8"
 			tmplR = "{ "
 			for i := 0; i < numindir; i++ {
-				tmplR += " var p" + s(i) + s(iterDepth) + " " + ustr.Times("*", numindir-i) + tn + " ; "
+				tmplR += " var p" + s(i) + id + " " + ustr.Times("*", numindir-i) + tn + " ; "
 			}
 			for i := 0; i < numindir; i++ {
 				tmplR += "if p++; data[p-1] != 0 { "
 				if i == 0 {
-					tmplW += "if " + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; pv0" + s(iterDepth) + " := *" + mfw + " ; "
+					println(mfw + "\n\t" + tn)
+					tmplW += "if " + mfw + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; pv0" + id + " := *" + mfw + " ; "
 				} else {
-					tmplW += "if pv" + s(i-1) + s(iterDepth) + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; pv" + s(i) + s(iterDepth) + " := *pv" + s(i-1) + s(iterDepth) + " ; "
+					tmplW += "if pv" + s(i-1) + id + " == nil { buf.WriteByte(0) } else { buf.WriteByte(1) ; pv" + s(i) + id + " := *pv" + s(i-1) + id + " ; "
 				}
 			}
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := numindir - 1; i >= 0; i-- {
 				if i == numindir-1 {
-					tmplR += " ; p" + s(i) + s(iterDepth) + " = &v" + s(numindir) + s(iterDepth) + " ; "
+					tmplR += " ; p" + s(i) + id + " = &v" + s(numindir) + id + " ; "
 				} else {
-					tmplR += " ; p" + s(i) + s(iterDepth) + " = &p" + s(i+1) + s(iterDepth) + " ; "
+					tmplR += " ; p" + s(i) + id + " = &p" + s(i+1) + id + " ; "
 				}
 				tmplR += "\n\t}\n\t"
 			}
-			tmplR += " ; " + mfr + " = p0" + s(iterDepth) + " } "
+			tmplR += " ; " + mfr + " = p0" + id + " } "
 			tmplW += "\n\t\t" + tw
 			tmplW += "\n\t" + ustr.Times("}", numindir)
 		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.IdxBMatching(typeName, ']', '['); pclose > 0 && (typeName[0] == '[' || ismap) {
@@ -154,7 +158,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			if ismap {
 				keytypespec, mk, mv := typeName[4:pclose], "k"+s(iterDepth), "m"+s(iterDepth)
 				tmplR += "for " + idx + " := 0; " + idx + " < " + slen + "; " + idx + "++ {"
-				tmplW += "for " + mk + ", " + mv + " := range " + mfr + " {"
+				tmplW += "for " + mk + ", " + mv + " := range " + mfw + " {"
 
 				tmplR += "\n\t\tvar b" + mk + " " + keytypespec
 				tmplR += "\n\t\tvar b" + mv + " " + valtypespec
@@ -162,7 +166,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplR += "\n\t\t" + tr
 				tr, _ = genForFieldOrVarOfNamedTypeRW(mv, "", tds, valtypespec, "", 0, iterDepth+1, taggedUnion)
 				tmplR += "\n\t\t" + tr
-				tmplR += "\n\t\t" + mfr + "[b" + mk + "] = b" + mv
+				tmplR += "\n\t\t" + ustr.Drop(mfr, ':') + "[b" + mk + "] = b" + mv
 				_, tw := genForFieldOrVarOfNamedTypeRW(mk, mk, tds, keytypespec, "", 0, iterDepth+1, nil)
 
 				tmplW += "\n\t\t" + tw
@@ -206,20 +210,28 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			}
 		} else if len(taggedUnion) > 0 {
 			// TAGGED INTERFACE
+			if numIndir > 0 {
+				tmplR += " var " + ustr.Drop(mfr, ':') + " " + typeName + " ; "
+			}
 
 			tmplR += "{ t" + " := data[p] ; p++ ; switch t" + " {"
 			tmplW += "{ switch t" + " := " + mfw + ".(type) {"
 			for ti, tu := range taggedUnion {
 				tr, _ := genForFieldOrVarOfNamedTypeRW(nf, "", tds, tu, "u", 0, iterDepth, nil)
-				tmplR += "\n\t\tcase " + s(ti+1) + ":\n\t\t\t" + "var u " + tu + " ; " + tr + " ; " + mfr + "= u"
+				tmplR += "\n\t\tcase " + s(ti+1) + ":\n\t\t\t" + "var u " + tu + " ; " + tr + " ; " + ustr.Drop(mfr, ':') + "= u"
 				_, tw := genForFieldOrVarOfNamedTypeRW(nf, "t", tds, tu, "", 0, iterDepth, nil)
 				tmplW += "\n\t\tcase " + tu + ":\n\t\t\tbuf.WriteByte(" + s(ti+1) + ") ; " + tw
 			}
-			tmplR += "\n\t\tdefault:\n\t\t\t" + mfr + "= nil"
+			tmplR += "\n\t\tdefault:\n\t\t\t" + ustr.Drop(mfr, ':') + "= nil"
 			if optIgnoreUnknownTypeCases {
 				tmplW += "\n\t\tdefault:\n\t\t\tbuf.WriteByte(0)"
 			} else {
-				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\tpanic(\"" + tds.TName + ".marshalTo: while attempting to serialize a non-nil " + typeName + ", encountered a concrete type not mentioned in corresponding tagged-union field-tag\")\n\t\t\t// panic(fmt.Sprintf(\"%T\", t))"
+				if ustr.Pref(mfw, "me.") {
+					mfw = ", " + mfw[3:] + " field"
+				} else {
+					mfw = ""
+				}
+				tmplW += "\n\t\tcase nil:\n\t\t\tbuf.WriteByte(0)" + "\n\t\tdefault:\n\t\t\tpanic(\"" + tds.TName + ".marshalTo" + mfw + ": while attempting to serialize a non-nil " + typeName + ", encountered a concrete type not mentioned in your corresponding tagged-union field-tag\")\n\t\t\t// panic(fmt.Sprintf(\"%T\", t)) // don't want fmt in by default, but it's here to uncomment when the temporary need arises"
 			}
 			tmplR += "\n\t}}"
 			tmplW += "\n\t}}"

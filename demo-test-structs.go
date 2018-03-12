@@ -15,7 +15,7 @@ type city struct {
 	ClosestTo *city
 	Companies []company
 	Families  *[]family
-	Schools   []school
+	Schools   *[]*school
 }
 
 type company struct {
@@ -31,7 +31,7 @@ type school struct {
 
 type family struct {
 	LastName string
-	Pets     map[string]petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
+	Pets     map[string]*petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
 }
 
 type person struct {
@@ -53,7 +53,7 @@ type hobby struct {
 	}
 	GroupSizeMinMax [2]uint
 	Outdoorsy       bool
-	Description     string
+	Description     *string
 }
 
 type petAnimal interface {
@@ -96,7 +96,7 @@ type petCat struct {
 
 type petDog struct {
 	pet
-	WalkLog map[time.Time][7]time.Duration
+	WalkLog *map[*time.Time][7]time.Duration
 }
 
 type fixedSize struct {
