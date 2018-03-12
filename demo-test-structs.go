@@ -13,7 +13,7 @@ type city struct {
 	Name      string
 	ClosestTo *city
 	Companies []company
-	Families  []family
+	Families  *[]family
 	Schools   []school
 }
 
@@ -65,7 +65,7 @@ type pet struct {
 	AgeWhenAdopted time.Duration
 	LastIllness    struct {
 		Days          time.Duration
-		Date          time.Time
+		Date          *time.Time
 		NotSerialized sort.Interface   `ggd:"-"`
 		Notes         sort.StringSlice `ggd:"[]string"`
 	}

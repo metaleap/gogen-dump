@@ -27,9 +27,11 @@ import (
 
 func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lName := (len(me.Name))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
-	buf.WriteString(me.Name)
+	{
+		lName := (len(me.Name))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
+		buf.WriteString(me.Name)
+	}
 
 	if me.ClosestTo == nil {
 		buf.WriteByte(0)
@@ -41,27 +43,39 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 		}
 	}
 
-	lCompanies := (len(me.Companies))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lCompanies))[:])
-	for i0 := 0; i0 < (lCompanies); i0++ {
-		if err = me.Companies[i0].marshalTo(buf); err != nil {
-			return
+	{
+		lCompanies := (len(me.Companies))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lCompanies))[:])
+		for i0 := 0; i0 < (lCompanies); i0++ {
+			if err = me.Companies[i0].marshalTo(buf); err != nil {
+				return
+			}
 		}
 	}
 
-	lFamilies := (len(me.Families))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lFamilies))[:])
-	for i0 := 0; i0 < (lFamilies); i0++ {
-		if err = me.Families[i0].marshalTo(buf); err != nil {
-			return
+	if me.Families == nil {
+		buf.WriteByte(0)
+	} else {
+		buf.WriteByte(1)
+		pv00 := *me.Families
+		{
+			lFamilies := (len(pv00))
+			buf.Write((*[8]byte)(unsafe.Pointer(&lFamilies))[:])
+			for i0 := 0; i0 < (lFamilies); i0++ {
+				if err = pv00[i0].marshalTo(buf); err != nil {
+					return
+				}
+			}
 		}
 	}
 
-	lSchools := (len(me.Schools))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lSchools))[:])
-	for i0 := 0; i0 < (lSchools); i0++ {
-		if err = me.Schools[i0].marshalTo(buf); err != nil {
-			return
+	{
+		lSchools := (len(me.Schools))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lSchools))[:])
+		for i0 := 0; i0 < (lSchools); i0++ {
+			if err = me.Schools[i0].marshalTo(buf); err != nil {
+				return
+			}
 		}
 	}
 
@@ -70,7 +84,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *city) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))+(8+(len(me.Families)*(8+44)+(8+(22*(8+44))+(22*234))))+(8+(len(me.Schools)*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*234)))))+(8+(len(me.Schools)*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -89,10 +103,12 @@ func (me *city) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lName := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Name = string(data[p : p+lName])
-	p += lName
+	{
+		lName := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Name = string(data[p : p+lName])
+		p += lName
+	}
 
 	{
 		var p00 *city
@@ -106,30 +122,42 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 		me.ClosestTo = p00
 	}
 
-	lCompanies := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Companies = make([]company, lCompanies)
-	for i0 := 0; i0 < (lCompanies); i0++ {
-		if err = me.Companies[i0].unmarshalFrom(&p, data); err != nil {
-			return
+	{
+		lCompanies := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Companies = make([]company, lCompanies)
+		for i0 := 0; i0 < (lCompanies); i0++ {
+			if err = me.Companies[i0].unmarshalFrom(&p, data); err != nil {
+				return
+			}
 		}
 	}
 
-	lFamilies := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Families = make([]family, lFamilies)
-	for i0 := 0; i0 < (lFamilies); i0++ {
-		if err = me.Families[i0].unmarshalFrom(&p, data); err != nil {
-			return
+	{
+		var p00 *[]family
+		if p++; data[p-1] != 0 {
+			lFamilies := (*((*int)(unsafe.Pointer(&data[p]))))
+			p += 8
+			v10 := make([]family, lFamilies)
+			for i0 := 0; i0 < (lFamilies); i0++ {
+				v10[i0] = family{}
+				if err = v10[i0].unmarshalFrom(&p, data); err != nil {
+					return
+				}
+			}
+			p00 = &v10
 		}
+		me.Families = p00
 	}
 
-	lSchools := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Schools = make([]school, lSchools)
-	for i0 := 0; i0 < (lSchools); i0++ {
-		if err = me.Schools[i0].unmarshalFrom(&p, data); err != nil {
-			return
+	{
+		lSchools := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Schools = make([]school, lSchools)
+		for i0 := 0; i0 < (lSchools); i0++ {
+			if err = me.Schools[i0].unmarshalFrom(&p, data); err != nil {
+				return
+			}
 		}
 	}
 
@@ -146,7 +174,7 @@ func (me *city) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *city) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))+(8+(len(me.Families)*(8+44)+(8+(22*(8+44))+(22*234))))+(8+(len(me.Schools)*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*234)))))+(8+(len(me.Schools)*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44))))))))))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -155,44 +183,50 @@ func (me *city) WriteTo(w io.Writer) (int64, error) {
 
 func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lSuppliers := (len(me.Suppliers))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lSuppliers))[:])
-	for i0 := 0; i0 < (lSuppliers); i0++ {
-		if me.Suppliers[i0] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *me.Suppliers[i0]
-			if err = pv01.marshalTo(buf); err != nil {
-				return
+	{
+		lSuppliers := (len(me.Suppliers))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lSuppliers))[:])
+		for i0 := 0; i0 < (lSuppliers); i0++ {
+			if me.Suppliers[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *me.Suppliers[i0]
+				if err = pv01.marshalTo(buf); err != nil {
+					return
+				}
 			}
 		}
 	}
 
-	lClients := (len(me.Clients))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lClients))[:])
-	for i0 := 0; i0 < (lClients); i0++ {
-		if me.Clients[i0] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *me.Clients[i0]
-			if err = pv01.marshalTo(buf); err != nil {
-				return
+	{
+		lClients := (len(me.Clients))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lClients))[:])
+		for i0 := 0; i0 < (lClients); i0++ {
+			if me.Clients[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *me.Clients[i0]
+				if err = pv01.marshalTo(buf); err != nil {
+					return
+				}
 			}
 		}
 	}
 
-	lStaff := (len(me.Staff))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lStaff))[:])
-	for i0 := 0; i0 < (lStaff); i0++ {
-		if me.Staff[i0] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *me.Staff[i0]
-			if err = pv01.marshalTo(buf); err != nil {
-				return
+	{
+		lStaff := (len(me.Staff))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lStaff))[:])
+		for i0 := 0; i0 < (lStaff); i0++ {
+			if me.Staff[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *me.Staff[i0]
+				if err = pv01.marshalTo(buf); err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -221,54 +255,60 @@ func (me *company) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lSuppliers := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Suppliers = make([]*company, lSuppliers)
-	for i0 := 0; i0 < (lSuppliers); i0++ {
-		{
-			var p01 *company
-			if p++; data[p-1] != 0 {
-				v11 := company{}
-				if err = v11.unmarshalFrom(&p, data); err != nil {
-					return
+	{
+		lSuppliers := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Suppliers = make([]*company, lSuppliers)
+		for i0 := 0; i0 < (lSuppliers); i0++ {
+			{
+				var p01 *company
+				if p++; data[p-1] != 0 {
+					v11 := company{}
+					if err = v11.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p01 = &v11
 				}
-				p01 = &v11
+				me.Suppliers[i0] = p01
 			}
-			me.Suppliers[i0] = p01
 		}
 	}
 
-	lClients := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Clients = make([]*company, lClients)
-	for i0 := 0; i0 < (lClients); i0++ {
-		{
-			var p01 *company
-			if p++; data[p-1] != 0 {
-				v11 := company{}
-				if err = v11.unmarshalFrom(&p, data); err != nil {
-					return
+	{
+		lClients := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Clients = make([]*company, lClients)
+		for i0 := 0; i0 < (lClients); i0++ {
+			{
+				var p01 *company
+				if p++; data[p-1] != 0 {
+					v11 := company{}
+					if err = v11.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p01 = &v11
 				}
-				p01 = &v11
+				me.Clients[i0] = p01
 			}
-			me.Clients[i0] = p01
 		}
 	}
 
-	lStaff := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Staff = make([]*person, lStaff)
-	for i0 := 0; i0 < (lStaff); i0++ {
-		{
-			var p01 *person
-			if p++; data[p-1] != 0 {
-				v11 := person{}
-				if err = v11.unmarshalFrom(&p, data); err != nil {
-					return
+	{
+		lStaff := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Staff = make([]*person, lStaff)
+		for i0 := 0; i0 < (lStaff); i0++ {
+			{
+				var p01 *person
+				if p++; data[p-1] != 0 {
+					v11 := person{}
+					if err = v11.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p01 = &v11
 				}
-				p01 = &v11
+				me.Staff[i0] = p01
 			}
-			me.Staff[i0] = p01
 		}
 	}
 
@@ -294,67 +334,71 @@ func (me *company) WriteTo(w io.Writer) (int64, error) {
 
 func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lLastName := (len(me.LastName))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lLastName))[:])
-	buf.WriteString(me.LastName)
+	{
+		lLastName := (len(me.LastName))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lLastName))[:])
+		buf.WriteString(me.LastName)
+	}
 
-	lPets := (len(me.Pets))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lPets))[:])
-	for k0, m0 := range me.Pets {
-		lk0 := (len(k0))
-		buf.Write((*[8]byte)(unsafe.Pointer(&lk0))[:])
-		buf.WriteString(k0)
-		{
-			switch t := m0.(type) {
-			case *petPiranha:
-				buf.WriteByte(1)
-				if t == nil {
-					buf.WriteByte(0)
-				} else {
+	{
+		lPets := (len(me.Pets))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lPets))[:])
+		for k0, m0 := range me.Pets {
+			lk0 := (len(k0))
+			buf.Write((*[8]byte)(unsafe.Pointer(&lk0))[:])
+			buf.WriteString(k0)
+			{
+				switch t := m0.(type) {
+				case *petPiranha:
 					buf.WriteByte(1)
-					pv01 := *t
-					if err = pv01.marshalTo(buf); err != nil {
-						return
+					if t == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						pv01 := *t
+						if err = pv01.marshalTo(buf); err != nil {
+							return
+						}
 					}
-				}
-			case *petHamster:
-				buf.WriteByte(2)
-				if t == nil {
+				case *petHamster:
+					buf.WriteByte(2)
+					if t == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						pv01 := *t
+						if err = pv01.marshalTo(buf); err != nil {
+							return
+						}
+					}
+				case *petCat:
+					buf.WriteByte(3)
+					if t == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						pv01 := *t
+						if err = pv01.marshalTo(buf); err != nil {
+							return
+						}
+					}
+				case *petDog:
+					buf.WriteByte(4)
+					if t == nil {
+						buf.WriteByte(0)
+					} else {
+						buf.WriteByte(1)
+						pv01 := *t
+						if err = pv01.marshalTo(buf); err != nil {
+							return
+						}
+					}
+				case nil:
 					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					pv01 := *t
-					if err = pv01.marshalTo(buf); err != nil {
-						return
-					}
+				default:
+					panic("family.marshalTo: while attempting to serialize a non-nil petAnimal, encountered a concrete type not mentioned in corresponding tagged-union field-tag")
+					// panic(fmt.Sprintf("%T", t))
 				}
-			case *petCat:
-				buf.WriteByte(3)
-				if t == nil {
-					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					pv01 := *t
-					if err = pv01.marshalTo(buf); err != nil {
-						return
-					}
-				}
-			case *petDog:
-				buf.WriteByte(4)
-				if t == nil {
-					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					pv01 := *t
-					if err = pv01.marshalTo(buf); err != nil {
-						return
-					}
-				}
-			case nil:
-				buf.WriteByte(0)
-			default:
-				panic("family.marshalTo: while attempting to serialize a non-nil petAnimal, encountered a concrete type not mentioned in corresponding tagged-union field-tag")
-				// panic(fmt.Sprintf("%T", t))
 			}
 		}
 	}
@@ -383,86 +427,90 @@ func (me *family) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lLastName := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.LastName = string(data[p : p+lLastName])
-	p += lLastName
-
-	lPets := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Pets = make(map[string]petAnimal, lPets)
-	for i0 := 0; i0 < (lPets); i0++ {
-		var bk0 string
-		var bm0 petAnimal
-		lk0 := (*((*int)(unsafe.Pointer(&data[p]))))
+	{
+		lLastName := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
-		bk0 = string(data[p : p+lk0])
-		p += lk0
-		{
-			t := data[p]
-			p++
-			switch t {
-			case 1:
-				var u *petPiranha
-				{
-					var p01 *petPiranha
-					if p++; data[p-1] != 0 {
-						v11 := petPiranha{}
-						if err = v11.unmarshalFrom(&p, data); err != nil {
-							return
+		me.LastName = string(data[p : p+lLastName])
+		p += lLastName
+	}
+
+	{
+		lPets := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Pets = make(map[string]petAnimal, lPets)
+		for i0 := 0; i0 < (lPets); i0++ {
+			var bk0 string
+			var bm0 petAnimal
+			lk0 := (*((*int)(unsafe.Pointer(&data[p]))))
+			p += 8
+			bk0 = string(data[p : p+lk0])
+			p += lk0
+			{
+				t := data[p]
+				p++
+				switch t {
+				case 1:
+					var u *petPiranha
+					{
+						var p01 *petPiranha
+						if p++; data[p-1] != 0 {
+							v11 := petPiranha{}
+							if err = v11.unmarshalFrom(&p, data); err != nil {
+								return
+							}
+							p01 = &v11
 						}
-						p01 = &v11
+						u = p01
 					}
-					u = p01
-				}
-				bm0 = u
-			case 2:
-				var u *petHamster
-				{
-					var p01 *petHamster
-					if p++; data[p-1] != 0 {
-						v11 := petHamster{}
-						if err = v11.unmarshalFrom(&p, data); err != nil {
-							return
+					bm0 = u
+				case 2:
+					var u *petHamster
+					{
+						var p01 *petHamster
+						if p++; data[p-1] != 0 {
+							v11 := petHamster{}
+							if err = v11.unmarshalFrom(&p, data); err != nil {
+								return
+							}
+							p01 = &v11
 						}
-						p01 = &v11
+						u = p01
 					}
-					u = p01
-				}
-				bm0 = u
-			case 3:
-				var u *petCat
-				{
-					var p01 *petCat
-					if p++; data[p-1] != 0 {
-						v11 := petCat{}
-						if err = v11.unmarshalFrom(&p, data); err != nil {
-							return
+					bm0 = u
+				case 3:
+					var u *petCat
+					{
+						var p01 *petCat
+						if p++; data[p-1] != 0 {
+							v11 := petCat{}
+							if err = v11.unmarshalFrom(&p, data); err != nil {
+								return
+							}
+							p01 = &v11
 						}
-						p01 = &v11
+						u = p01
 					}
-					u = p01
-				}
-				bm0 = u
-			case 4:
-				var u *petDog
-				{
-					var p01 *petDog
-					if p++; data[p-1] != 0 {
-						v11 := petDog{}
-						if err = v11.unmarshalFrom(&p, data); err != nil {
-							return
+					bm0 = u
+				case 4:
+					var u *petDog
+					{
+						var p01 *petDog
+						if p++; data[p-1] != 0 {
+							v11 := petDog{}
+							if err = v11.unmarshalFrom(&p, data); err != nil {
+								return
+							}
+							p01 = &v11
 						}
-						p01 = &v11
+						u = p01
 					}
-					u = p01
+					bm0 = u
+				default:
+					bm0 = nil
 				}
-				bm0 = u
-			default:
-				bm0 = nil
 			}
+			me.Pets[bk0] = bm0
 		}
-		me.Pets[bk0] = bm0
 	}
 
 	*pos = p
@@ -538,15 +586,19 @@ func (me *fixedSize) WriteTo(w io.Writer) (int64, error) {
 
 func (me *hobby) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lName := (len(me.Name))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
-	buf.WriteString(me.Name)
+	{
+		lName := (len(me.Name))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
+		buf.WriteString(me.Name)
+	}
 
 	buf.Write((*[46]byte)(unsafe.Pointer(&me.PopularityScore))[:])
 
-	lDescription := (len(me.Description))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lDescription))[:])
-	buf.WriteString(me.Description)
+	{
+		lDescription := (len(me.Description))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lDescription))[:])
+		buf.WriteString(me.Description)
+	}
 
 	return
 }
@@ -572,18 +624,22 @@ func (me *hobby) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *hobby) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lName := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Name = string(data[p : p+lName])
-	p += lName
+	{
+		lName := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Name = string(data[p : p+lName])
+		p += lName
+	}
 
 	*((*[46]byte)(unsafe.Pointer(&me.PopularityScore))) = *((*[46]byte)(unsafe.Pointer(&data[p])))
 	p += 46
 
-	lDescription := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Description = string(data[p : p+lDescription])
-	p += lDescription
+	{
+		lDescription := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Description = string(data[p : p+lDescription])
+		p += lDescription
+	}
 
 	*pos = p
 	return
@@ -607,9 +663,11 @@ func (me *hobby) WriteTo(w io.Writer) (int64, error) {
 
 func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lFirstName := (len(me.FirstName))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lFirstName))[:])
-	buf.WriteString(me.FirstName)
+	{
+		lFirstName := (len(me.FirstName))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lFirstName))[:])
+		buf.WriteString(me.FirstName)
+	}
 
 	if me.Family == nil {
 		buf.WriteByte(0)
@@ -727,10 +785,12 @@ func (me *person) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lFirstName := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.FirstName = string(data[p : p+lFirstName])
-	p += lFirstName
+	{
+		lFirstName := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.FirstName = string(data[p : p+lFirstName])
+		p += lFirstName
+	}
 
 	{
 		var p00 *family
@@ -744,13 +804,15 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 		me.Family = p00
 	}
 
-	lDateOfBirth := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	if lDateOfBirth > 0 {
-		if err = me.DateOfBirth.UnmarshalBinary(data[p : p+lDateOfBirth]); err != nil {
-			return
+	{
+		lDateOfBirth := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		if lDateOfBirth > 0 {
+			if err = me.DateOfBirth.UnmarshalBinary(data[p : p+lDateOfBirth]); err != nil {
+				return
+			}
+			p += lDateOfBirth
 		}
-		p += lDateOfBirth
 	}
 
 	for i0 := 0; i0 < 2; i0++ {
@@ -862,22 +924,30 @@ func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 
 	buf.Write((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))[:])
 
-	{
-		d, e := me.LastIllness.Date.MarshalBinary()
-		if err = e; err != nil {
-			return
+	if me.LastIllness.Date == nil {
+		buf.WriteByte(0)
+	} else {
+		buf.WriteByte(1)
+		pv00 := *me.LastIllness.Date
+		{
+			d, e := pv00.MarshalBinary()
+			if err = e; err != nil {
+				return
+			}
+			lLastIllnessDate := (len(d))
+			buf.Write((*[8]byte)(unsafe.Pointer(&lLastIllnessDate))[:])
+			buf.Write(d)
 		}
-		lLastIllnessDate := (len(d))
-		buf.Write((*[8]byte)(unsafe.Pointer(&lLastIllnessDate))[:])
-		buf.Write(d)
 	}
 
-	lLastIllnessNotes := (len(me.LastIllness.Notes))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lLastIllnessNotes))[:])
-	for i0 := 0; i0 < (lLastIllnessNotes); i0++ {
-		li0 := (len(me.LastIllness.Notes[i0]))
-		buf.Write((*[8]byte)(unsafe.Pointer(&li0))[:])
-		buf.WriteString(me.LastIllness.Notes[i0])
+	{
+		lLastIllnessNotes := (len(me.LastIllness.Notes))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lLastIllnessNotes))[:])
+		for i0 := 0; i0 < (lLastIllnessNotes); i0++ {
+			li0 := (len(me.LastIllness.Notes[i0]))
+			buf.Write((*[8]byte)(unsafe.Pointer(&li0))[:])
+			buf.WriteString(me.LastIllness.Notes[i0])
+		}
 	}
 
 	if me.OrigCostIfKnown == nil {
@@ -893,7 +963,7 @@ func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *pet) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.LastIllness.Notes)*(8+44)))+(1+16)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.LastIllness.Notes)*(8+44)))+(1+16)))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -915,23 +985,35 @@ func (me *pet) unmarshalFrom(pos *int, data []byte) (err error) {
 	*((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))) = *((*[20]byte)(unsafe.Pointer(&data[p])))
 	p += 20
 
-	lLastIllnessDate := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	if lLastIllnessDate > 0 {
-		if err = me.LastIllness.Date.UnmarshalBinary(data[p : p+lLastIllnessDate]); err != nil {
-			return
+	{
+		var p00 *time.Time
+		if p++; data[p-1] != 0 {
+			v10 := time.Time{}
+			{
+				lLastIllnessDate := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				if lLastIllnessDate > 0 {
+					if err = v10.UnmarshalBinary(data[p : p+lLastIllnessDate]); err != nil {
+						return
+					}
+					p += lLastIllnessDate
+				}
+			}
+			p00 = &v10
 		}
-		p += lLastIllnessDate
+		me.LastIllness.Date = p00
 	}
 
-	lLastIllnessNotes := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.LastIllness.Notes = make([]string, lLastIllnessNotes)
-	for i0 := 0; i0 < (lLastIllnessNotes); i0++ {
-		li0 := (*((*int)(unsafe.Pointer(&data[p]))))
+	{
+		lLastIllnessNotes := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
-		me.LastIllness.Notes[i0] = string(data[p : p+li0])
-		p += li0
+		me.LastIllness.Notes = make([]string, lLastIllnessNotes)
+		for i0 := 0; i0 < (lLastIllnessNotes); i0++ {
+			li0 := (*((*int)(unsafe.Pointer(&data[p]))))
+			p += 8
+			me.LastIllness.Notes[i0] = string(data[p : p+li0])
+			p += li0
+		}
 	}
 
 	{
@@ -957,7 +1039,7 @@ func (me *pet) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *pet) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.LastIllness.Notes)*(8+44)))+(1+16)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.LastIllness.Notes)*(8+44)))+(1+16)))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -983,7 +1065,7 @@ func (me *petCat) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *petCat) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+1)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+1)))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1029,7 +1111,7 @@ func (me *petCat) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *petCat) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+1)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+1)))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -1042,19 +1124,21 @@ func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
 		return
 	}
 
-	lWalkLog := (len(me.WalkLog))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lWalkLog))[:])
-	for k0, m0 := range me.WalkLog {
-		{
-			d, e := k0.MarshalBinary()
-			if err = e; err != nil {
-				return
+	{
+		lWalkLog := (len(me.WalkLog))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lWalkLog))[:])
+		for k0, m0 := range me.WalkLog {
+			{
+				d, e := k0.MarshalBinary()
+				if err = e; err != nil {
+					return
+				}
+				lk0 := (len(d))
+				buf.Write((*[8]byte)(unsafe.Pointer(&lk0))[:])
+				buf.Write(d)
 			}
-			lk0 := (len(d))
-			buf.Write((*[8]byte)(unsafe.Pointer(&lk0))[:])
-			buf.Write(d)
+			buf.Write(((*[56]byte)(unsafe.Pointer(&(m0[0]))))[:])
 		}
-		buf.Write(((*[56]byte)(unsafe.Pointer(&(m0[0]))))[:])
 	}
 
 	return
@@ -1062,7 +1146,7 @@ func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *petDog) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.WalkLog)*234)+(len(me.WalkLog)*(7*(8))))))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.WalkLog)*234)+(len(me.WalkLog)*(7*(8))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1085,23 +1169,27 @@ func (me *petDog) unmarshalFrom(pos *int, data []byte) (err error) {
 		return
 	}
 
-	lWalkLog := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.WalkLog = make(map[time.Time][7]time.Duration, lWalkLog)
-	for i0 := 0; i0 < (lWalkLog); i0++ {
-		var bk0 time.Time
-		var bm0 [7]time.Duration
-		lk0 := (*((*int)(unsafe.Pointer(&data[p]))))
+	{
+		lWalkLog := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
-		if lk0 > 0 {
-			if err = bk0.UnmarshalBinary(data[p : p+lk0]); err != nil {
-				return
+		me.WalkLog = make(map[time.Time][7]time.Duration, lWalkLog)
+		for i0 := 0; i0 < (lWalkLog); i0++ {
+			var bk0 time.Time
+			var bm0 [7]time.Duration
+			{
+				lk0 := (*((*int)(unsafe.Pointer(&data[p]))))
+				p += 8
+				if lk0 > 0 {
+					if err = bk0.UnmarshalBinary(data[p : p+lk0]); err != nil {
+						return
+					}
+					p += lk0
+				}
 			}
-			p += lk0
+			bm0 = *((*[7]time.Duration)(unsafe.Pointer(&data[p])))
+			p += 56
+			me.WalkLog[bk0] = bm0
 		}
-		bm0 = *((*[7]time.Duration)(unsafe.Pointer(&data[p])))
-		p += 56
-		me.WalkLog[bk0] = bm0
 	}
 
 	*pos = p
@@ -1117,7 +1205,7 @@ func (me *petDog) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *petDog) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.WalkLog)*234)+(len(me.WalkLog)*(7*(8))))))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.WalkLog)*234)+(len(me.WalkLog)*(7*(8))))))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -1135,7 +1223,7 @@ func (me *petHamster) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *petHamster) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1171,7 +1259,7 @@ func (me *petHamster) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *petHamster) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -1184,23 +1272,25 @@ func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
 		return
 	}
 
-	lWeird := (len(me.Weird))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lWeird))[:])
-	for k0, m0 := range me.Weird {
-		if k0 == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *k0
-			buf.Write(((*[2048]byte)(unsafe.Pointer(&(pv01[0]))))[:])
-		}
-		lm0 := (len(m0))
-		buf.Write((*[8]byte)(unsafe.Pointer(&lm0))[:])
-		if (lm0) > 0 && (lm0) < 634600 {
-			buf.Write((*[2147483647]byte)(unsafe.Pointer(&m0[0]))[:3384*(lm0)])
-		} else {
-			for i1 := 0; i1 < (lm0); i1++ {
-				buf.Write((*[3384]byte)(unsafe.Pointer(&m0[i1]))[:])
+	{
+		lWeird := (len(me.Weird))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lWeird))[:])
+		for k0, m0 := range me.Weird {
+			if k0 == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *k0
+				buf.Write(((*[2048]byte)(unsafe.Pointer(&(pv01[0]))))[:])
+			}
+			lm0 := (len(m0))
+			buf.Write((*[8]byte)(unsafe.Pointer(&lm0))[:])
+			if (lm0) > 0 && (lm0) < 634600 {
+				buf.Write((*[2147483647]byte)(unsafe.Pointer(&m0[0]))[:3384*(lm0)])
+			} else {
+				for i1 := 0; i1 < (lm0); i1++ {
+					buf.Write((*[3384]byte)(unsafe.Pointer(&m0[i1]))[:])
+				}
 			}
 		}
 	}
@@ -1210,7 +1300,7 @@ func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *petPiranha) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.Weird)*(1+(2048*(1))))+(len(me.Weird)*(8+(33*3384))))))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.Weird)*(1+(2048*(1))))+(len(me.Weird)*(8+(33*3384))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1233,35 +1323,37 @@ func (me *petPiranha) unmarshalFrom(pos *int, data []byte) (err error) {
 		return
 	}
 
-	lWeird := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Weird = make(map[*[2048]byte][]fixedSize, lWeird)
-	for i0 := 0; i0 < (lWeird); i0++ {
-		var bk0 *[2048]byte
-		var bm0 []fixedSize
-		{
-			var p01 *[2048]byte
-			if p++; data[p-1] != 0 {
-				v11 := *((*[2048]byte)(unsafe.Pointer(&data[p])))
-				p += 2048
-				p01 = &v11
-			}
-			bk0 = p01
-		}
-		lm0 := (*((*int)(unsafe.Pointer(&data[p]))))
+	{
+		lWeird := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
-		bm0 = make([]fixedSize, lm0)
-		if (lm0) > 0 && (lm0) < 634600 {
-			lmul := 3384 * (lm0)
-			copy(((*[2147483647]byte)(unsafe.Pointer(&bm0[0])))[0:lmul], data[p:p+(lmul)])
-			p += (lmul)
-		} else {
-			for i1 := 0; i1 < (lm0); i1++ {
-				bm0[i1] = *((*fixedSize)(unsafe.Pointer(&data[p])))
-				p += 3384
+		me.Weird = make(map[*[2048]byte][]fixedSize, lWeird)
+		for i0 := 0; i0 < (lWeird); i0++ {
+			var bk0 *[2048]byte
+			var bm0 []fixedSize
+			{
+				var p01 *[2048]byte
+				if p++; data[p-1] != 0 {
+					v11 := *((*[2048]byte)(unsafe.Pointer(&data[p])))
+					p += 2048
+					p01 = &v11
+				}
+				bk0 = p01
 			}
+			lm0 := (*((*int)(unsafe.Pointer(&data[p]))))
+			p += 8
+			bm0 = make([]fixedSize, lm0)
+			if (lm0) > 0 && (lm0) < 634600 {
+				lmul := 3384 * (lm0)
+				copy(((*[2147483647]byte)(unsafe.Pointer(&bm0[0])))[0:lmul], data[p:p+(lmul)])
+				p += (lmul)
+			} else {
+				for i1 := 0; i1 < (lm0); i1++ {
+					bm0[i1] = *((*fixedSize)(unsafe.Pointer(&data[p])))
+					p += 3384
+				}
+			}
+			me.Weird[bk0] = bm0
 		}
-		me.Weird[bk0] = bm0
 	}
 
 	*pos = p
@@ -1277,7 +1369,7 @@ func (me *petPiranha) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *petPiranha) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+234+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.Weird)*(1+(2048*(1))))+(len(me.Weird)*(8+(33*3384))))))
+	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.Weird)*(1+(2048*(1))))+(len(me.Weird)*(8+(33*3384))))))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}
@@ -1286,30 +1378,34 @@ func (me *petPiranha) WriteTo(w io.Writer) (int64, error) {
 
 func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 
-	lTeachers := (len(me.Teachers))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lTeachers))[:])
-	for i0 := 0; i0 < (lTeachers); i0++ {
-		if me.Teachers[i0] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *me.Teachers[i0]
-			if err = pv01.marshalTo(buf); err != nil {
-				return
+	{
+		lTeachers := (len(me.Teachers))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lTeachers))[:])
+		for i0 := 0; i0 < (lTeachers); i0++ {
+			if me.Teachers[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *me.Teachers[i0]
+				if err = pv01.marshalTo(buf); err != nil {
+					return
+				}
 			}
 		}
 	}
 
-	lPupils := (len(me.Pupils))
-	buf.Write((*[8]byte)(unsafe.Pointer(&lPupils))[:])
-	for i0 := 0; i0 < (lPupils); i0++ {
-		if me.Pupils[i0] == nil {
-			buf.WriteByte(0)
-		} else {
-			buf.WriteByte(1)
-			pv01 := *me.Pupils[i0]
-			if err = pv01.marshalTo(buf); err != nil {
-				return
+	{
+		lPupils := (len(me.Pupils))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lPupils))[:])
+		for i0 := 0; i0 < (lPupils); i0++ {
+			if me.Pupils[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv01 := *me.Pupils[i0]
+				if err = pv01.marshalTo(buf); err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -1338,37 +1434,41 @@ func (me *school) ReadFrom(r io.Reader) (n int64, err error) {
 func (me *school) unmarshalFrom(pos *int, data []byte) (err error) {
 	p := *pos
 
-	lTeachers := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Teachers = make([]*person, lTeachers)
-	for i0 := 0; i0 < (lTeachers); i0++ {
-		{
-			var p01 *person
-			if p++; data[p-1] != 0 {
-				v11 := person{}
-				if err = v11.unmarshalFrom(&p, data); err != nil {
-					return
+	{
+		lTeachers := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Teachers = make([]*person, lTeachers)
+		for i0 := 0; i0 < (lTeachers); i0++ {
+			{
+				var p01 *person
+				if p++; data[p-1] != 0 {
+					v11 := person{}
+					if err = v11.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p01 = &v11
 				}
-				p01 = &v11
+				me.Teachers[i0] = p01
 			}
-			me.Teachers[i0] = p01
 		}
 	}
 
-	lPupils := (*((*int)(unsafe.Pointer(&data[p]))))
-	p += 8
-	me.Pupils = make([]*person, lPupils)
-	for i0 := 0; i0 < (lPupils); i0++ {
-		{
-			var p01 *person
-			if p++; data[p-1] != 0 {
-				v11 := person{}
-				if err = v11.unmarshalFrom(&p, data); err != nil {
-					return
+	{
+		lPupils := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Pupils = make([]*person, lPupils)
+		for i0 := 0; i0 < (lPupils); i0++ {
+			{
+				var p01 *person
+				if p++; data[p-1] != 0 {
+					v11 := person{}
+					if err = v11.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p01 = &v11
 				}
-				p01 = &v11
+				me.Pupils[i0] = p01
 			}
-			me.Pupils[i0] = p01
 		}
 	}
 
@@ -1405,7 +1505,7 @@ func (me *simWorld) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *simWorld) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44)))))))) + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * 234)))) + (8 + (33*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44)))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44))))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44)))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * 234))))) + (8 + (33*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44)))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44))))))))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1443,7 +1543,7 @@ func (me *simWorld) UnmarshalBinary(data []byte) (err error) {
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 func (me *simWorld) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44)))))))) + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * 234)))) + (8 + (33*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44)))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44))))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44)))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * 234))))) + (8 + (33*(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*234)))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(8+44)))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * 234))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (8 + 44))))))))))))
 	if err := me.marshalTo(buf); err != nil {
 		return 0, err
 	}

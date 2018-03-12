@@ -79,6 +79,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 	case "string":
 		tmplW = lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; buf.WriteString(" + mfw + ")"
 		tmplR = genLenR(nfr) + " ; " + mfr + "= string(data[p : p+" + lf + "]) ; p += " + lf
+		if iterDepth == 0 {
+			tmplR, tmplW = "{ "+tmplR+" }", "{ "+tmplW+" }"
+		}
 	case "int16", "uint16":
 		tmplW = genSizedW(nfr, mfw, "2")
 		tmplR = genSizedR(mfr, typeName, "2")
@@ -131,9 +134,9 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		} else if ismap, pclose := ustr.Pref(typeName, "map["), ustr.IdxBMatching(typeName, ']', '['); pclose > 0 && (typeName[0] == '[' || ismap) {
 			// ARRAY / SLICE / MAP
 
-			arrfixedsize, slen := 0, typeName[1:pclose]
+			arrfixedsize, slen, hasl := 0, typeName[1:pclose], false
 			if slen == "" || ismap {
-				if slen = "(" + lf + ")"; optSafeVarints {
+				if hasl, slen = true, "("+lf+")"; optSafeVarints {
 					slen = "int" + slen
 				}
 				ensureImportFor(typeName)
@@ -171,6 +174,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 && !optNoFixedSizeCode {
 				tmplW = genSizedW(nfr, mfw+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
+				return
 			} else {
 				offr, offw := len(tmplR), len(tmplW)
 				if valtypespec == "byte" || valtypespec == "uint8" {
@@ -193,6 +197,11 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					tmplR = tmplR[:offr] + " ; if " + slen + " > 0 && " + slen + " < " + s(maxlen) + " { " +
 						" lmul := " + sfs + "*" + slen + " ; copy(((*[" + s(fixedsizemax-1) + "]byte)(unsafe.Pointer(&" + ustr.Drop(mfr, ':') + "[0])))[0:lmul], data[p:p+(lmul)])  ; p += (lmul) " +
 						" } else { " + tmplR[offr:] + " } ; "
+				}
+			}
+			if hasl && iterDepth == 0 {
+				if tmplW = " { " + tmplW + " } "; !ustr.Pref(mfr, "v") {
+					tmplR = " { " + tmplR + " } "
 				}
 			}
 		} else if len(taggedUnion) > 0 {
@@ -237,7 +246,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 					ensureImportFor(typeName)
 					trpref = mfr + "= " + typeName + "{} ; "
 				}
-				tmplR = genLenR(nfr) + " ; if " + lf + " > 0 { if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf + " }"
+				tmplR = "{ " + genLenR(nfr) + " ; if " + lf + " > 0 { if err = " + ustr.Drop(mfr, ':') + ".UnmarshalBinary(data[p : p+" + lf + "]); err != nil { return } ; p += " + lf + " } }"
 				tmplW = "{ d, e := " + mfw + ".MarshalBinary() ; if err = e; err != nil { return } ; " + lf + " := " + cast + "(len(d)) ; " + genLenW(nfr) + " ; buf.Write(d) }"
 
 				var islocalserializablestruct bool
