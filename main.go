@@ -38,13 +38,13 @@ var (
 
 	optIgnoreUnknownTypeCases = false // set to true by presence of command-line arg -ignoreUnknownTypeCases
 
-	optHeuristicLenStrings = 11
+	optHeuristicLenStrings = 7
 
-	optHeuriticLenSlices = 11
+	optHeuriticLenSlices = 2
 
-	optHeuristicLenMaps = 11
+	optHeuristicLenMaps = 2
 
-	optHeuristicSizeUnknowns = 42
+	optHeuristicSizeUnknowns = 8
 
 	optFixedSizeMaxSizeInGB = 2 // 1024 = 1TB, up to 1048576 = 1PB — this amount is never really allocated (if not strictly needed) and only matters for the specific case of dynamic-length slices of fixed-size elems, where this describes the theoretically-supported (by generated de/serialization code) upper bound of total RAM cost for the entire slice — whenever exceeded, instead of a single bytes-copy-op a normal per-elem iteration runs
 )

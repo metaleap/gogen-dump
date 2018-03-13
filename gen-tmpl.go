@@ -77,11 +77,11 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
 		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ETINY: data too small to contain header")
+			err = errors.New("ELENGTH: not enough data for header")
 		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != {{.StructuralHash}} {
-			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+			err = errors.New("ESCHEMA: incompatible schema-header")
 		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+			err = errors.New("ELENGTH: actual length does not match length-header")
 		} else {
 			var pos0 int
 			err = me.unmarshalFrom(&pos0, data)
