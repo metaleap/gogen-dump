@@ -19,6 +19,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"unsafe"
 
@@ -33,12 +34,8 @@ import (
    - ClosestTo - *city
    - Companies - []company
    - Families - *[]family
-   - Schools - *[]*school
+   - Schools - []*school
 */
-
-func (me *city) structVersion() uint64 {
-	return 11068290357372428015
-}
 
 func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -84,23 +81,17 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 		}
 	}
 
-	if me.Schools == nil {
-		buf.WriteByte(0)
-	} else {
-		buf.WriteByte(1)
-		pv000 := *me.Schools
-		{
-			lSchools := (len(pv000))
-			buf.Write((*[8]byte)(unsafe.Pointer(&lSchools))[:])
-			for i0 := 0; i0 < (lSchools); i0++ {
-				if pv000[i0] == nil {
-					buf.WriteByte(0)
-				} else {
-					buf.WriteByte(1)
-					pv010 := *pv000[i0]
-					if err = pv010.marshalTo(buf); err != nil {
-						return
-					}
+	{
+		lSchools := (len(me.Schools))
+		buf.Write((*[8]byte)(unsafe.Pointer(&lSchools))[:])
+		for i0 := 0; i0 < (lSchools); i0++ {
+			if me.Schools[i0] == nil {
+				buf.WriteByte(0)
+			} else {
+				buf.WriteByte(1)
+				pv010 := *me.Schools[i0]
+				if err = pv010.marshalTo(buf); err != nil {
+					return
 				}
 			}
 		}
@@ -111,7 +102,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *city) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*(1+234))))))+(1+(8+(33*(1+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*(1+234))))))+(8+(len(me.Schools)*(1+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44))))))))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -169,27 +160,22 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 	}
 
 	{
-		var p000 *[]*school
-		if p++; data[p-1] != 0 {
-			lSchools := (*((*int)(unsafe.Pointer(&data[p]))))
-			p += 8
-			v100 := make([]*school, lSchools)
-			for i0 := 0; i0 < (lSchools); i0++ {
-				{
-					var p010 *school
-					if p++; data[p-1] != 0 {
-						v110 := school{}
-						if err = v110.unmarshalFrom(&p, data); err != nil {
-							return
-						}
-						p010 = &v110
+		lSchools := (*((*int)(unsafe.Pointer(&data[p]))))
+		p += 8
+		me.Schools = make([]*school, lSchools)
+		for i0 := 0; i0 < (lSchools); i0++ {
+			{
+				var p010 *school
+				if p++; data[p-1] != 0 {
+					v110 := school{}
+					if err = v110.unmarshalFrom(&p, data); err != nil {
+						return
 					}
-					v100[i0] = p010
+					p010 = &v110
 				}
+				me.Schools[i0] = p010
 			}
-			p000 = &v100
 		}
-		me.Schools = p000
 	}
 
 	*pos = p
@@ -207,18 +193,30 @@ func (me *city) UnmarshalBinary(data []byte) (err error) {
 func (me *city) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 6593994633469704441 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *city) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*(1+234))))))+(1+(8+(33*(1+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+func (me *city) WriteTo(w io.Writer) (n int64, err error) {
+	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+(1+234)+(8+(len(me.Companies)*(8+(33*(1+234)))+(8+(33*(1+234)))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))+(1+(8+(33*(8+44)+(8+(22*(8+44))+(22*(1+234))))))+(8+(len(me.Schools)*(1+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))+(8+(33*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44))))))))))))
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{6593994633469704441, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* company:
@@ -229,10 +227,6 @@ func (me *city) WriteTo(w io.Writer) (int64, error) {
    - Clients - []*company
    - Staff - []*person
 */
-
-func (me *company) structVersion() uint64 {
-	return 17539614992760979000
-}
 
 func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -371,18 +365,30 @@ func (me *company) UnmarshalBinary(data []byte) (err error) {
 func (me *company) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 1099423678947472881 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *company) WriteTo(w io.Writer) (int64, error) {
+func (me *company) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (8+(len(me.Suppliers)*(1+234)))+(8+(len(me.Clients)*(1+234)))+(8+(len(me.Staff)*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{1099423678947472881, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* family:
@@ -390,12 +396,8 @@ func (me *company) WriteTo(w io.Writer) (int64, error) {
 
    The serialization view:
    - LastName - string
-   - Pets - *petPiranha | *petHamster | *petCat | *petDog
+   - Pets - map[string]*petAnimal = [ *petCat | *petDog | *petHamster | *petPiranha ]
 */
-
-func (me *family) structVersion() uint64 {
-	return 8599601846628952182
-}
 
 func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -419,7 +421,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 				pv014 := *m0
 				{
 					switch t := pv014.(type) {
-					case *petPiranha:
+					case *petCat:
 						buf.WriteByte(1)
 						if t == nil {
 							buf.WriteByte(0)
@@ -430,7 +432,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 								return
 							}
 						}
-					case *petHamster:
+					case *petDog:
 						buf.WriteByte(2)
 						if t == nil {
 							buf.WriteByte(0)
@@ -441,7 +443,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 								return
 							}
 						}
-					case *petCat:
+					case *petHamster:
 						buf.WriteByte(3)
 						if t == nil {
 							buf.WriteByte(0)
@@ -452,7 +454,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 								return
 							}
 						}
-					case *petDog:
+					case *petPiranha:
 						buf.WriteByte(4)
 						if t == nil {
 							buf.WriteByte(0)
@@ -516,34 +518,6 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 						p++
 						switch t {
 						case 1:
-							var u *petPiranha
-							{
-								var p010 *petPiranha
-								if p++; data[p-1] != 0 {
-									v110 := petPiranha{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
-										return
-									}
-									p010 = &v110
-								}
-								u = p010
-							}
-							v114 = u
-						case 2:
-							var u *petHamster
-							{
-								var p010 *petHamster
-								if p++; data[p-1] != 0 {
-									v110 := petHamster{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
-										return
-									}
-									p010 = &v110
-								}
-								u = p010
-							}
-							v114 = u
-						case 3:
 							var u *petCat
 							{
 								var p010 *petCat
@@ -557,12 +531,40 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 								u = p010
 							}
 							v114 = u
-						case 4:
+						case 2:
 							var u *petDog
 							{
 								var p010 *petDog
 								if p++; data[p-1] != 0 {
 									v110 := petDog{}
+									if err = v110.unmarshalFrom(&p, data); err != nil {
+										return
+									}
+									p010 = &v110
+								}
+								u = p010
+							}
+							v114 = u
+						case 3:
+							var u *petHamster
+							{
+								var p010 *petHamster
+								if p++; data[p-1] != 0 {
+									v110 := petHamster{}
+									if err = v110.unmarshalFrom(&p, data); err != nil {
+										return
+									}
+									p010 = &v110
+								}
+								u = p010
+							}
+							v114 = u
+						case 4:
+							var u *petPiranha
+							{
+								var p010 *petPiranha
+								if p++; data[p-1] != 0 {
+									v110 := petPiranha{}
 									if err = v110.unmarshalFrom(&p, data); err != nil {
 										return
 									}
@@ -598,18 +600,30 @@ func (me *family) UnmarshalBinary(data []byte) (err error) {
 func (me *family) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 4523365645226592426 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *family) WriteTo(w io.Writer) (int64, error) {
+func (me *family) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.LastName))+(8+(len(me.Pets)*(8+44))+(len(me.Pets)*(1+234)))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{4523365645226592426, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* fixedSize:
@@ -630,10 +644,6 @@ func (me *family) WriteTo(w io.Writer) (int64, error) {
    - sixt1 - [4][5]complex128, 320b
    - sixt2 - [6][7]complex384, 2016b
 */
-
-func (me *fixedSize) structVersion() uint64 {
-	return 3387551728070519514
-}
 
 func (me *fixedSize) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -672,18 +682,30 @@ func (me *fixedSize) UnmarshalBinary(data []byte) (err error) {
 func (me *fixedSize) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 3387551728070519514 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *fixedSize) WriteTo(w io.Writer) (int64, error) {
+func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 3384))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{3387551728070519514, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* hobby:
@@ -699,10 +721,6 @@ func (me *fixedSize) WriteTo(w io.Writer) (int64, error) {
    - Outdoorsy - bool, 1b
    - Description - *string
 */
-
-func (me *hobby) structVersion() uint64 {
-	return 5837267412986298571
-}
 
 func (me *hobby) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -778,18 +796,30 @@ func (me *hobby) UnmarshalBinary(data []byte) (err error) {
 func (me *hobby) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 5837267412986298571 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *hobby) WriteTo(w io.Writer) (int64, error) {
+func (me *hobby) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.Name))+8+16+1+4+16+1+(1+(8+44))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{5837267412986298571, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* person:
@@ -800,13 +830,9 @@ func (me *hobby) WriteTo(w io.Writer) (int64, error) {
    - Family - *family
    - DateOfBirth - time.Time
    - Parents - [2]*person
-   - FavPet - *petPiranha | *petHamster | *petCat | *petDog
+   - FavPet - interface{} = [ *petCat | *petDog | *petHamster | *petPiranha ]
    - Top5Hobbies - [5]hobby
 */
-
-func (me *person) structVersion() uint64 {
-	return 12437898434566093295
-}
 
 func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -850,7 +876,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 
 	{
 		switch t := me.FavPet.(type) {
-		case *petPiranha:
+		case *petCat:
 			buf.WriteByte(1)
 			if t == nil {
 				buf.WriteByte(0)
@@ -861,7 +887,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 					return
 				}
 			}
-		case *petHamster:
+		case *petDog:
 			buf.WriteByte(2)
 			if t == nil {
 				buf.WriteByte(0)
@@ -872,7 +898,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 					return
 				}
 			}
-		case *petCat:
+		case *petHamster:
 			buf.WriteByte(3)
 			if t == nil {
 				buf.WriteByte(0)
@@ -883,7 +909,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 					return
 				}
 			}
-		case *petDog:
+		case *petPiranha:
 			buf.WriteByte(4)
 			if t == nil {
 				buf.WriteByte(0)
@@ -972,34 +998,6 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 		p++
 		switch t {
 		case 1:
-			var u *petPiranha
-			{
-				var p000 *petPiranha
-				if p++; data[p-1] != 0 {
-					v100 := petPiranha{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
-						return
-					}
-					p000 = &v100
-				}
-				u = p000
-			}
-			me.FavPet = u
-		case 2:
-			var u *petHamster
-			{
-				var p000 *petHamster
-				if p++; data[p-1] != 0 {
-					v100 := petHamster{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
-						return
-					}
-					p000 = &v100
-				}
-				u = p000
-			}
-			me.FavPet = u
-		case 3:
 			var u *petCat
 			{
 				var p000 *petCat
@@ -1013,12 +1011,40 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 				u = p000
 			}
 			me.FavPet = u
-		case 4:
+		case 2:
 			var u *petDog
 			{
 				var p000 *petDog
 				if p++; data[p-1] != 0 {
 					v100 := petDog{}
+					if err = v100.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p000 = &v100
+				}
+				u = p000
+			}
+			me.FavPet = u
+		case 3:
+			var u *petHamster
+			{
+				var p000 *petHamster
+				if p++; data[p-1] != 0 {
+					v100 := petHamster{}
+					if err = v100.unmarshalFrom(&p, data); err != nil {
+						return
+					}
+					p000 = &v100
+				}
+				u = p000
+			}
+			me.FavPet = u
+		case 4:
+			var u *petPiranha
+			{
+				var p000 *petPiranha
+				if p++; data[p-1] != 0 {
+					v100 := petPiranha{}
 					if err = v100.unmarshalFrom(&p, data); err != nil {
 						return
 					}
@@ -1053,18 +1079,30 @@ func (me *person) UnmarshalBinary(data []byte) (err error) {
 func (me *person) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11925296559860657288 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *person) WriteTo(w io.Writer) (int64, error) {
+func (me *person) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (8+len(me.FirstName))+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{11925296559860657288, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* pet:
@@ -1078,10 +1116,6 @@ func (me *person) WriteTo(w io.Writer) (int64, error) {
    - LastIllness.Notes - []string
    - OrigCostIfKnown - *complex128
 */
-
-func (me *pet) structVersion() uint64 {
-	return 13186359848934745181
-}
 
 func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1195,18 +1229,30 @@ func (me *pet) UnmarshalBinary(data []byte) (err error) {
 func (me *pet) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13186359848934745181 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *pet) WriteTo(w io.Writer) (int64, error) {
+func (me *pet) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.LastIllness.Notes)*(8+44)))+(1+16)))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{13186359848934745181, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* petCat:
@@ -1216,10 +1262,6 @@ func (me *pet) WriteTo(w io.Writer) (int64, error) {
    - pet - pet
    - RabbitsSlaynPerDayOnAvg - *uint8
 */
-
-func (me *petCat) structVersion() uint64 {
-	return 10328327121215776800
-}
 
 func (me *petCat) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1279,18 +1321,30 @@ func (me *petCat) UnmarshalBinary(data []byte) (err error) {
 func (me *petCat) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13481110904349996911 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *petCat) WriteTo(w io.Writer) (int64, error) {
+func (me *petCat) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+1)))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{13481110904349996911, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* petDog:
@@ -1300,10 +1354,6 @@ func (me *petCat) WriteTo(w io.Writer) (int64, error) {
    - pet - pet
    - WalkLog - *map[*time.Time][7]time.Duration
 */
-
-func (me *petDog) structVersion() uint64 {
-	return 13481847725794463905
-}
 
 func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1410,18 +1460,30 @@ func (me *petDog) UnmarshalBinary(data []byte) (err error) {
 func (me *petDog) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 3596748310628763049 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *petDog) WriteTo(w io.Writer) (int64, error) {
+func (me *petDog) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(1+(8+(22*(1+234))+(22*(7*(8)))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{3596748310628763049, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* petHamster:
@@ -1430,10 +1492,6 @@ func (me *petDog) WriteTo(w io.Writer) (int64, error) {
    The serialization view:
    - pet - pet
 */
-
-func (me *petHamster) structVersion() uint64 {
-	return 3668387203931970709
-}
 
 func (me *petHamster) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1475,18 +1533,30 @@ func (me *petHamster) UnmarshalBinary(data []byte) (err error) {
 func (me *petHamster) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13333275131017623849 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *petHamster) WriteTo(w io.Writer) (int64, error) {
+func (me *petHamster) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{13333275131017623849, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* petPiranha:
@@ -1496,10 +1566,6 @@ func (me *petHamster) WriteTo(w io.Writer) (int64, error) {
    - pet - pet
    - Weird - map[*[2048]byte][]fixedSize
 */
-
-func (me *petPiranha) structVersion() uint64 {
-	return 10060652816787623047
-}
 
 func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1597,18 +1663,30 @@ func (me *petPiranha) UnmarshalBinary(data []byte) (err error) {
 func (me *petPiranha) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11146996824496730984 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *petPiranha) WriteTo(w io.Writer) (int64, error) {
+func (me *petPiranha) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 4+8+8+(1+234)+(8+(len(me.pet.LastIllness.Notes)*(8+44)))+(1+16)+(8+(len(me.Weird)*(1+(2048*(1))))+(len(me.Weird)*(8+(33*3384))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{11146996824496730984, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* school:
@@ -1618,10 +1696,6 @@ func (me *petPiranha) WriteTo(w io.Writer) (int64, error) {
    - Teachers - []*person
    - Pupils - []*person
 */
-
-func (me *school) structVersion() uint64 {
-	return 15855399974602017432
-}
 
 func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1725,18 +1799,30 @@ func (me *school) UnmarshalBinary(data []byte) (err error) {
 func (me *school) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11190834307079325616 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *school) WriteTo(w io.Writer) (int64, error) {
+func (me *school) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (8+(len(me.Teachers)*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))+(8+(len(me.Pupils)*(1+(8+44)+(1+(8+44)+(8+(22*(8+44))+(22*(1+234))))+234+(2*(1+234))+234+(5*((8+44)+8+16+1+4+16+1+(1+(8+44)))))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{11190834307079325616, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 
 /* simWorld:
@@ -1745,10 +1831,6 @@ func (me *school) WriteTo(w io.Writer) (int64, error) {
    The serialization view:
    - Cities - [123]city
 */
-
-func (me *simWorld) structVersion() uint64 {
-	return 8229792174223923377
-}
 
 func (me *simWorld) marshalTo(buf *bytes.Buffer) (err error) {
 
@@ -1763,7 +1845,7 @@ func (me *simWorld) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data`.
 func (me *simWorld) MarshalBinary() (data []byte, err error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))))) + (1 + (8 + (33 * (1 + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44)))))))))))))))
+	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))))) + (8 + (33 * (1 + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))))))))
 	if err = me.marshalTo(buf); err == nil {
 		data = buf.Bytes()
 	}
@@ -1794,16 +1876,28 @@ func (me *simWorld) UnmarshalBinary(data []byte) (err error) {
 func (me *simWorld) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13412975302553189149 {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
-func (me *simWorld) WriteTo(w io.Writer) (int64, error) {
-	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))))) + (1 + (8 + (33 * (1 + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44)))))))))))))))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+func (me *simWorld) WriteTo(w io.Writer) (n int64, err error) {
+	buf := bytes.NewBuffer(make([]byte, 0, (123 * ((8 + 44) + (1 + 234) + (8 + (33*(8+(33*(1+234))) + (8 + (33 * (1 + 234))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))) + (1 + (8 + (33*(8+44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))))) + (8 + (33 * (1 + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))) + (8 + (33 * (1 + (8 + 44) + (1 + (8 + 44) + (8 + (22 * (8 + 44)) + (22 * (1 + 234)))) + 234 + (2 * (1 + 234)) + 234 + (5 * ((8 + 44) + 8 + 16 + 1 + 4 + 16 + 1 + (1 + (8 + 44))))))))))))))
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64{13412975302553189149, uint64(buf.Len())}
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }

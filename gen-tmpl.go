@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"go/format"
+	"sort"
 	"text/template"
 )
 
@@ -14,6 +15,7 @@ const tmplSrc = `package {{.PName}}
 {{end}}
 import (
 	"bytes"
+	"errors"
 	"io"
 	"unsafe"
 	{{range $pkgname, $pkg := .Imps}}{{if $pkg.Used}}
@@ -28,10 +30,6 @@ import (
    The serialization view:
 {{range .Fields}}   - {{.FName}} - {{.Comment}}
 {{end}}*/
-
-func (me *{{.TName}}) structVersion() uint64 {
-	return {{.StructuralHash}}
-}
 
 func (me *{{.TName}}) marshalTo(buf *bytes.Buffer) (err error) {
 	{{if .TmplW}}
@@ -77,18 +75,30 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 func (me *{{.TName}}) ReadFrom(r io.Reader) (n int64, err error) {
 	var buf bytes.Buffer
 	if n, err = buf.ReadFrom(r); err == nil {
-		err = me.UnmarshalBinary(buf.Bytes())
+		if data := buf.Bytes(); len(data) < 16 {
+			err = errors.New("ETINY: data too small to contain header")
+		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != {{.StructuralHash}} {
+			err = errors.New("ESTALE: data was serialized from a different (likely outdated) structural schema")
+		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
+			err = errors.New("ECORRUPT: actual data length does not match size-info in header")
+		} else {
+			var pos0 int
+			err = me.unmarshalFrom(&pos0, data)
+		}
 	}
 	return
 }
 
 // WriteTo implements ` + "`" + `io.WriterTo` + "`" + ` by serializing ` + "`" + `me` + "`" + ` to ` + "`" + `w` + "`" + `.
-func (me *{{.TName}}) WriteTo(w io.Writer) (int64, error) {
+func (me *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, {{.InitialBufSize}}))
-	if err := me.marshalTo(buf); err != nil {
-		return 0, err
+	if err = me.marshalTo(buf); err == nil {
+		header := [2]uint64 { {{.StructuralHash}}, uint64(buf.Len()) }
+		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+		n, err = buf.WriteTo(w)
+		n += 16
 	}
-	return buf.WriteTo(w)
+	return
 }
 {{end}}
 `
@@ -106,6 +116,15 @@ func (me *tmplDotFile) Len() int               { return len(me.Structs) }
 func (me *tmplDotFile) Less(i int, j int) bool { return me.Structs[i].TName < me.Structs[j].TName }
 func (me *tmplDotFile) Swap(i int, j int)      { me.Structs[i], me.Structs[j] = me.Structs[j], me.Structs[i] }
 
+func (me *tmplDotFile) byName(name string) *tmplDotStruct {
+	for _, tds := range me.Structs {
+		if tds.TName == name {
+			return tds
+		}
+	}
+	return nil
+}
+
 type tmplDotPkgImp struct {
 	ImportPath string
 	Used       bool
@@ -119,6 +138,9 @@ type tmplDotStruct struct {
 	InitialBufSize string
 	StructuralHash uint64
 	Comment        string
+
+	hashInputSelf bytesBuffer
+	hashInputRefs bytesBuffer
 
 	fixedsize   int
 	sizeheuring bool
@@ -168,7 +190,7 @@ type tmplDotField struct {
 	Comment string
 
 	typeIdent         string
-	taggedUnion       []string
+	taggedUnion       sort.StringSlice
 	skip              bool
 	nextOneWasSkipped bool
 	isLast            bool

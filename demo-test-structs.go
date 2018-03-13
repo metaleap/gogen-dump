@@ -15,7 +15,7 @@ type city struct {
 	ClosestTo *city
 	Companies []company
 	Families  *[]family
-	Schools   *[]*school
+	Schools   []*school
 }
 
 type company struct {
@@ -31,7 +31,7 @@ type school struct {
 
 type family struct {
 	LastName string
-	Pets     map[string]*petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
+	Pets     map[string]*petAnimal `ggd:" *petCat *petDog *petHamster *petPiranha  "`
 }
 
 type person struct {
@@ -39,7 +39,7 @@ type person struct {
 	Family      *family
 	DateOfBirth time.Time
 	Parents     [2]*person
-	FavPet      petAnimal `ggd:"*petPiranha *petHamster *petCat *petDog"`
+	FavPet      petAnimal `ggd:" *petPiranha *petHamster   *petDog *petCat  "`
 	Top5Hobbies [5]hobby
 }
 
@@ -160,6 +160,10 @@ type bytesBuffer struct{ b []byte }
 
 func (me *bytesBuffer) bytes() []byte {
 	return me.b
+}
+
+func (me *bytesBuffer) copyTo(to *bytesBuffer) {
+	to.write(me.b)
 }
 
 func (me *bytesBuffer) reset() {

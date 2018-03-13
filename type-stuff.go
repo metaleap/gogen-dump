@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/go-forks/xxhash"
 	"github.com/go-leap/str"
-
-	"github.com/cespare/xxhash"
 )
 
 func collectTypes() {
@@ -32,12 +31,14 @@ func collectTypes() {
 					typeSyns[tsyn] = tref
 				}
 				tdf.taggedUnion = nil
+			} else if len(tdf.taggedUnion) > 1 {
+				sort.Sort(tdf.taggedUnion)
 			}
 		}
 	}
 
 	tdot.allStructTypeDefsCollected = true
-	sort.Sort(&tdot) // prevents pointless diffs
+	sort.Sort(&tdot) // prevents pointless diffs, also for correct hashes
 
 	// anylyze fixed-size fields for fixed-size siblings
 	for _, tds := range tdot.Structs {
@@ -62,18 +63,15 @@ func collectTypes() {
 	}
 
 	// prep some summary comments
-	var hashinput bytesBuffer
-	add4hash := func(s string) { hashinput.writeString(s) }
 	for _, tds := range tdot.Structs {
-		hashinput = bytesBuffer{}
+		add4hash := func(s string) { tds.hashInputSelf.writeString(s) }
 		add4hash(s(len(tds.Fields)))
 		for _, tdf := range tds.Fields {
 			fs := tdf.fixedSize()
 			add4hash(s(fs))
+			tdf.Comment = tdf.finalTypeIdent()
 			if len(tdf.taggedUnion) > 0 {
-				tdf.Comment = ustr.Join(tdf.taggedUnion, " | ")
-			} else {
-				tdf.Comment = tdf.finalTypeIdent()
+				tdf.Comment += " = [ " + ustr.Join(tdf.taggedUnion, " | ") + " ]"
 			}
 			add4hash(tdf.Comment)
 			if fs > 0 {
@@ -90,9 +88,35 @@ func collectTypes() {
 			tds.Comment += ", always " + sizeStr(fs)
 		}
 		add4hash(s(fs))
+	}
+
+	// augment struct hashes with referenced-struct hashes
+	forFieldsOfLocalStructs(func(fieldOwner *tmplDotStruct, fieldTypeRef *tmplDotStruct) {
+		fieldTypeRef.hashInputSelf.copyTo(&fieldOwner.hashInputRefs)
+	})
+	forFieldsOfLocalStructs(func(fieldOwner *tmplDotStruct, fieldTypeRef *tmplDotStruct) {
+		fieldTypeRef.hashInputRefs.copyTo(&fieldOwner.hashInputRefs)
+	})
+	for _, tds := range tdot.Structs {
 		xxh := xxhash.New()
-		hashinput.writeTo(xxh)
+		tds.hashInputSelf.writeTo(xxh)
+		tds.hashInputRefs.writeTo(xxh)
 		tds.StructuralHash = xxh.Sum64()
+	}
+}
+
+func forFieldsOfLocalStructs(on func(fieldOwner *tmplDotStruct, fieldTypeRef *tmplDotStruct)) {
+	for _, tds := range tdot.Structs {
+		for _, tdf := range tds.Fields {
+			for _, tuspec := range tdf.taggedUnion {
+				if tdstruc := tdot.byName(finalElemTypeSpec(tuspec)); tdstruc != nil {
+					on(tds, tdstruc)
+				}
+			}
+			if tdstruc := tdot.byName(finalElemTypeSpec(tdf.finalTypeIdent())); tdstruc != nil {
+				on(tds, tdstruc)
+			}
+		}
 	}
 }
 
@@ -270,10 +294,8 @@ func fixedSizeForTypeSpec(typeIdent string) int {
 		return -1
 	}
 	if tdot.allStructTypeDefsCollected {
-		for _, tds := range tdot.Structs {
-			if tds.TName == typeident {
-				return mult * tds.fixedSize()
-			}
+		if tds := tdot.byName(typeident); tds != nil {
+			return mult * tds.fixedSize()
 		}
 		return -1
 	}
@@ -352,11 +374,8 @@ func typeSizeHeur(typeIdent string, expr string) (heur string) {
 		if expr != "" {
 			expr += "."
 		}
-		for _, tdt := range tdot.Structs {
-			if tdt.TName == tident {
-				heur = tdt.sizeHeur(expr)
-				break
-			}
+		if tds := tdot.byName(tident); tds != nil {
+			heur = tds.sizeHeur(expr)
 		}
 	}
 
