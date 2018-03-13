@@ -190,21 +190,21 @@ func (me *city) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *city) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 6593994633469704441 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *city) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 6593994633469704441 {
+			err = errors.New("city: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -362,21 +362,21 @@ func (me *company) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *company) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 1099423678947472881 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *company) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 1099423678947472881 {
+			err = errors.New("company: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -597,21 +597,21 @@ func (me *family) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *family) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 4523365645226592426 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *family) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 4523365645226592426 {
+			err = errors.New("family: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -679,21 +679,21 @@ func (me *fixedSize) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *fixedSize) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 3387551728070519514 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *fixedSize) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 3387551728070519514 {
+			err = errors.New("fixedSize: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -793,21 +793,21 @@ func (me *hobby) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *hobby) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 5837267412986298571 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *hobby) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 5837267412986298571 {
+			err = errors.New("hobby: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1076,21 +1076,21 @@ func (me *person) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *person) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11925296559860657288 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *person) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 11925296559860657288 {
+			err = errors.New("person: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1226,21 +1226,21 @@ func (me *pet) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *pet) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13186359848934745181 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *pet) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 13186359848934745181 {
+			err = errors.New("pet: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1318,21 +1318,21 @@ func (me *petCat) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *petCat) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13481110904349996911 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *petCat) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 13481110904349996911 {
+			err = errors.New("petCat: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1457,21 +1457,21 @@ func (me *petDog) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *petDog) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 3596748310628763049 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *petDog) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 3596748310628763049 {
+			err = errors.New("petDog: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1530,21 +1530,21 @@ func (me *petHamster) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *petHamster) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13333275131017623849 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *petHamster) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 13333275131017623849 {
+			err = errors.New("petHamster: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1660,21 +1660,21 @@ func (me *petPiranha) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *petPiranha) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11146996824496730984 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *petPiranha) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 11146996824496730984 {
+			err = errors.New("petPiranha: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1796,21 +1796,21 @@ func (me *school) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *school) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 11190834307079325616 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *school) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 11190834307079325616 {
+			err = errors.New("school: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
@@ -1873,21 +1873,21 @@ func (me *simWorld) UnmarshalBinary(data []byte) (err error) {
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
-func (me *simWorld) ReadFrom(r io.Reader) (n int64, err error) {
-	var buf bytes.Buffer
-	if n, err = buf.ReadFrom(r); err == nil {
-		if data := buf.Bytes(); len(data) < 16 {
-			err = errors.New("ELENGTH: not enough data for header")
-		} else if header := *((*[2]uint64)(unsafe.Pointer(&data[0]))); header[0] != 13412975302553189149 {
-			err = errors.New("ESCHEMA: incompatible schema-header")
-		} else if dump := data[16:]; uint64(len(dump)) != header[1] {
-			err = errors.New("ELENGTH: actual length does not match length-header")
+func (me *simWorld) ReadFrom(r io.Reader) (int64, error) {
+	var header [2]uint64
+	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	if err == nil {
+		if header[0] != 13412975302553189149 {
+			err = errors.New("simWorld: incompatible signature header")
 		} else {
-			var pos0 int
-			err = me.unmarshalFrom(&pos0, data)
+			pos0, data := 0, make([]byte, header[1])
+			if n, err = io.ReadFull(r, data); err == nil {
+				err = me.unmarshalFrom(&pos0, data)
+			}
+			n += 16
 		}
 	}
-	return
+	return int64(n), err
 }
 
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.

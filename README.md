@@ -28,7 +28,7 @@ For each (specified) `struct` that has any serializable fields at all, the follo
     marshalTo(bytes.Buffer) (error)
 
     // code to deserialize marshalTo's output, no sanity checks
-    unmarshalFrom([]byte) (int, error)
+    unmarshalFrom(*int, []byte) (error)
 
     // implements encoding.BinaryMarshaler using marshalTo
     MarshalBinary() ([]byte, error)
