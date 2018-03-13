@@ -2,7 +2,7 @@
 
 Generates **low-level/high-performance binary serialization**/deserialization methods for the Go `struct` type-defs you already have:
 
-### *no schema files, no `reflect`; profoundly few restrictions or safety hatches*!
+### *no schema files, no `reflect`; profoundly few restrictions, safety hatches optional*!
 
 ## Usage:
 
@@ -24,12 +24,23 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 For each (specified) `struct` that has any serializable fields at all, the following methods are generated:
 
 ```go
-    marshalTo(bytes.Buffer) (error)     // actual serialization logic
-    WriteTo(io.Writer) (int64, error)   // to act as io.WriterTo
-    MarshalBinary() ([]byte, error)     // to act as encoding.BinaryMarshaler
-    ReadFrom(io.Reader) (int64, error)  // to act as io.ReaderFrom
-    UnmarshalBinary([]byte) error       // to act as encoding.BinaryUnmarshaler
-    unmarshalFrom([]byte) (int, error)  // actual deserialization logic
+    // core serialization code, only pure raw data, no meta-headers
+    marshalTo(bytes.Buffer) (error)
+
+    // code to deserialize marshalTo's output, no sanity checks
+    unmarshalFrom([]byte) (int, error)
+
+    // implements encoding.BinaryMarshaler using marshalTo
+    MarshalBinary() ([]byte, error)
+
+    // implements encoding.BinaryUnmarshaler using unmarshalFrom
+    UnmarshalBinary([]byte) error
+
+    // implements io.WriterTo, writes 16B header and then marshalTo's output
+    WriteTo(io.Writer) (int64, error)
+
+    // implements io.ReaderFrom, verifies the 16B header, calls unmarshalFrom
+    ReadFrom(io.Reader) (int64, error)
 ```
 
 ## Satisfies my own following fuzzy in-flux spec that I found underserved by the ecosystem at time of writing:
@@ -37,14 +48,13 @@ For each (specified) `struct` that has any serializable fields at all, the follo
 - no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema" (so `gogen-dump` only generates methods, not types)
 - thanks to the above, no use of `reflect`-based introspection, so private fields too can be (de)serialized
 - unlike `gob` and most other (de)serialization schemes, does not laboriously encode and decode field or type names/tags/IDs (except as desired for specially-tagged interface-typed fields, detailed below) but rather purely follows (generation-time) type *structure*: the code is the schema, the byte stream is pure raw data — not always what you want, but quite often what I require
-- generates reads and writes that pack the most bytes in the fewest instructions, so attempts to have the largest-feasible contiguous-in-memory pointable-to data chunk (aka. statically known fixed-size field/structure/array/combination) done in at best just a single memory copy (or as few as necessary)
+- generates reads and writes that pack the most bytes-transferred in the fewest instructions, so attempts to have the largest-feasible contiguous-in-memory pointable-to data chunk (aka. statically known fixed-size field/structure/array/combination) done in ideally just a single memory copy (or as few as necessary)
 
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:
 
-- varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width (except in fixed-size fields/structures (unless `-varintsNotFixedSize` on), described further below)
+- varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width (except in fixed-size fields/structures (unless `--varintsNotFixedSize` on), described further below)
 - caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no "address registry" for storage and restoral of sharing is kept
-- caution: generated code uses `unsafe.Pointer` everywhere and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
-- caution: no explicit or gradual versioning or sanity/length checks
+- caution: generated code uses `unsafe.Pointer` everywhere extensively and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`
 
 So by and large, use-cases are limited to scenarios such as:
 - local cache files of expensive-to-(re)compute (non-sharing) structures (but where the absence or "corruption" —aka. "schema"-`struct`ural "version" changes— of such files at worst only delays but won't break the system),
@@ -68,11 +78,12 @@ So by and large, use-cases are limited to scenarios such as:
 
 ## Further optional flags to append for tuners and tweakers:
 
-- `-safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing** (the default), varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
-- `-varintsNotFixedSize` — much terser+faster code is generated for known-to-be-fixed-size fields / field sequences (incl. structs and statically-sized-arrays that themselves contain no slices, maps, pointers, strings), and varints (`int`, `uint`, `uintptr`) are considered "fixed-size" for this purpose **by default** (though that 'fixed' size varies depending on the compiler/arch combination used at generation-time). **If this flag is present**, they *aren't*.
-- `-ignoreUnknownTypeCases` — if present, serialization of interface-typed fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.
-- `-sql.IsolationLevel=int`, `-os.FileMode=uint32`, `-sort.StringSlice=[]string`, etc. — declares as a type synonym/alias the specified type used in but not defined in the current package, to generate low-level (de)serialization code for fields/elements of such package-external types that are really just aliases for (direct or indirected) prim-types (and often do not implement `encoding.BinaryMarshaler` / `encoding.BinaryUnmarshaler`).
-  - For convenience, `-time.Duration=int64` is already always implicitly present and does not need to be expressly specified.
+- `--safeVarints` — if present, all varints (`int`, `uint`, `uintptr`) are explicitly type-converted from/to `uint64`/`int64` during `unsafe.Pointer` shenanigans at serialization/deserialization time. (**If missing** (the default), varints are *also still* always written-to and read-from 8-byte segments during both serialization and deserialization —both in the source/destination byte-stream and local source/destination memory—, but without any such explicit type conversions.)
+- `--noFixedSizeCode` — **if missing** (the default), `gogen-dump` generates much terser+faster code-paths for (de)serializing chunks of contiguous fixed-size data in fewer instructions. (This necessitates a 100% equivalence between the marshaling and unmarshaling Go binaries' compiler/architecture with regards to machine-word size and struct padding/alignment/offset — not just endianness.) **If present**, no such code is ever generated, so even fixed-length arrays (of fixed-size elements) are (de)serialized by iteration and fixed-size structs field-by-field etc. On the flip side, both parties only need to share the same endianness (and de-facto "schema version").
+- `--varintsNotFixedSize` — much terser+faster code is generated by default (see above) for known-to-be-fixed-size fields / field sequences (incl. structs and statically-sized-arrays that themselves contain no slices, maps, pointers, strings), and varints (`int`, `uint`, `uintptr`) are considered "fixed-size" for this purpose **by default** (though that 'fixed' size varies depending on the compiler/arch combination used at generation-time). **If this flag is present**, they *aren't*.
+- `--ignoreUnknownTypeCases` — if present, serialization of interface-typed fields with non-`nil` values of types not mentioned in its tagged-union field-tag (see previous section) simply writes a type-tag byte of `0` (equivalent to value `nil`) and subsequent deserialization will restore the field as `nil`. **If missing** (the default), serialization raises an error as a sanity check reminding you to update the tagged-union field-tag.
+- `--sort.StringSlice=[]string`, `--sql.IsolationLevel=int`, `--os.FileMode=uint32`, etc. — declares as a type synonym/alias the specified type used in but not defined in the current package, to generate low-level (de)serialization code for fields/elements of such package-external types that are really just aliases for (direct or indirected) prim-types (and often do not implement `encoding.BinaryMarshaler` / `encoding.BinaryUnmarshaler`).
+  - For convenience, `--time.Duration=int64` is already always implicitly present and does not need to be expressly specified.
   - Reminder that in-package type aliases / synonyms will be picked up automatically and need not be expressly specified.
   - An alternative to type-aliasing via command-line flags is a `ggd:"underlyingtypename"` struct-field-tag next to the "offender" in your source `struct`(s). It only needs to exist once, not for every single applicable field.
 - all flags can be included via both `-` and `--`

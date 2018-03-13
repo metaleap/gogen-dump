@@ -69,6 +69,8 @@ func main() {
 						optVarintsNotFixedSize, ditch = true, true
 					case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
 						optIgnoreUnknownTypeCases, ditch = true, true
+					case "-noFixedSizeCode", "--noFixedSizeCode":
+						optNoFixedSizeCode, ditch = true, true
 					default:
 						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.Skip(tn, '-'), "="); tsyn != "" && tref != "" {
 							ditch, typeSyns[tsyn] = true, tref
