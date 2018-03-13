@@ -38,6 +38,8 @@ var (
 
 	optIgnoreUnknownTypeCases = false // set to true by presence of command-line arg -ignoreUnknownTypeCases
 
+	optStdlibBytesBuffer = false // set to true by presence of command-line arg -stdlibBytesBuffer
+
 	optHeuristicLenStrings = 7
 
 	optHeuriticLenSlices = 2
@@ -71,6 +73,8 @@ func main() {
 						optIgnoreUnknownTypeCases, ditch = true, true
 					case "-noFixedSizeCode", "--noFixedSizeCode":
 						optNoFixedSizeCode, ditch = true, true
+					case "-stdlibBytesBuffer", "--stdlibBytesBuffer":
+						optStdlibBytesBuffer, ditch = true, true
 					default:
 						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.Skip(tn, '-'), "="); tsyn != "" && tref != "" {
 							ditch, typeSyns[tsyn] = true, tref
@@ -90,6 +94,9 @@ func main() {
 		goPkgDirPath = filepath.Dir(goPkgDirPath)
 	}
 	goPkgImpPath := udevgo.DirPathToImportPath(goPkgDirPath)
+	if goPkgImpPath == tdot.ProgHint {
+		optStdlibBytesBuffer = true
+	}
 
 	var gofilepaths []string
 	ufs.WalkFilesIn(goPkgDirPath, func(fp string) bool {
@@ -149,6 +156,27 @@ func main() {
 			println(tn + ": type not found")
 		}
 	}
+
+	if tdot.BBuf.Stdlib = optStdlibBytesBuffer; tdot.BBuf.Stdlib {
+		tdot.BBuf.Bytes = "buf.Bytes()"
+		tdot.BBuf.Ctor = "bytes.NewBuffer"
+		tdot.BBuf.Len = "buf.Len()"
+		tdot.BBuf.Type = "*bytes.Buffer"
+		tdot.BBuf.WriteB = "buf.WriteByte"
+		tdot.BBuf.WriteN = "buf.Write"
+		tdot.BBuf.WriteS = "buf.WriteString"
+		tdot.BBuf.WriteTo = "buf.WriteTo"
+	} else {
+		tdot.BBuf.Bytes = "buf.b"
+		tdot.BBuf.Ctor = "writesBuffer"
+		tdot.BBuf.Len = "len(buf.b)"
+		tdot.BBuf.Type = "*writeBuf"
+		tdot.BBuf.WriteB = "buf.writeByte"
+		tdot.BBuf.WriteN = "buf.write"
+		tdot.BBuf.WriteS = "buf.writeString"
+		tdot.BBuf.WriteTo = "buf.writeTo"
+	}
+
 	if collectTypes(); len(tdot.Structs) == 0 {
 		println("nothing to generate")
 	} else if err = genDump(); err != nil {

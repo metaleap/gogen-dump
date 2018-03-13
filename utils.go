@@ -4,25 +4,21 @@ import (
 	"io"
 )
 
-type bytesBuffer struct{ b []byte }
+type writeBuf struct{ b []byte }
 
-func (me *bytesBuffer) bytes() []byte {
-	return me.b
+func writesBuffer(b []byte) *writeBuf {
+	return &writeBuf{b: b}
 }
 
-func (me *bytesBuffer) copyTo(to *bytesBuffer) {
+func (me *writeBuf) copyTo(to *writeBuf) {
 	to.write(me.b)
 }
 
-func (me *bytesBuffer) reset() {
-	me.b = me.b[:0]
-}
-
-func (me *bytesBuffer) writeByte(b byte) {
+func (me *writeBuf) writeByte(b byte) {
 	l, c := len(me.b), cap(me.b)
 	if l == c {
 		old := me.b
-		me.b = make([]byte, l+1, l+l)
+		me.b = make([]byte, l+1, l+l+128)
 		copy(me.b[:l], old)
 	} else {
 		me.b = me.b[:l+1]
@@ -30,11 +26,11 @@ func (me *bytesBuffer) writeByte(b byte) {
 	me.b[l] = b
 }
 
-func (me *bytesBuffer) write(b []byte) {
+func (me *writeBuf) write(b []byte) {
 	l, c, n := len(me.b), cap(me.b), len(b)
 	if ln := l + n; ln > c {
 		old := me.b
-		me.b = make([]byte, ln, ln+ln)
+		me.b = make([]byte, ln, ln+ln+128)
 		copy(me.b[:l], old)
 	} else {
 		me.b = me.b[:ln]
@@ -42,11 +38,11 @@ func (me *bytesBuffer) write(b []byte) {
 	copy(me.b[l:], b)
 }
 
-func (me *bytesBuffer) writeString(b string) {
+func (me *writeBuf) writeString(b string) {
 	l, c, n := len(me.b), cap(me.b), len(b)
 	if ln := l + n; ln > c {
 		old := me.b
-		me.b = make([]byte, ln, ln+ln)
+		me.b = make([]byte, ln, ln+ln+128)
 		copy(me.b[:l], old)
 	} else {
 		me.b = me.b[:ln]
@@ -54,7 +50,7 @@ func (me *bytesBuffer) writeString(b string) {
 	copy(me.b[l:], b)
 }
 
-func (me *bytesBuffer) writeTo(w io.Writer) (int64, error) {
+func (me *writeBuf) writeTo(w io.Writer) (int64, error) {
 	n, err := w.Write(me.b)
 	return int64(n), err
 }
