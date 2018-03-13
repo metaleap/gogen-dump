@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"go/format"
 	"sort"
+	"strconv"
 	"text/template"
 )
 
@@ -167,20 +168,25 @@ func (me *tmplDotStruct) fixedSize() int {
 	return me.fixedsize
 }
 
-func (me *tmplDotStruct) sizeHeur(exprPref string) string {
+func (me *tmplDotStruct) sizeHeur(exprPref string) *sizeHeuristics {
 	if me.sizeheuring {
-		return optHeuristicSizeUnknowns
+		return &sizeHeuristics{Lit: optHeuristicSizeUnknowns}
 	}
 	me.sizeheuring = true
 	if fs := me.fixedSize(); fs > 0 {
-		return s(fs)
+		return &sizeHeuristics{Lit: fs}
 	}
-	var s string
+	var last *sizeHeuristics
 	for _, tdf := range me.Fields {
-		s += "+" + tdf.sizeHeur(exprPref)
+		this := tdf.sizeHeur(exprPref)
+		if last == nil {
+			last = this
+		} else {
+			last = &sizeHeuristics{Op1: last, OpAdd: true, Op2: this}
+		}
 	}
 	me.sizeheuring = false
-	return s[1:]
+	return last
 }
 
 type tmplDotField struct {
@@ -198,7 +204,6 @@ type tmplDotField struct {
 	fixedsize           int
 	fixedsizeExt        int
 	fixedsizeExtNumSkip int
-	sizeheur            string
 }
 
 func (me *tmplDotField) finalTypeIdent() (typeident string) {
@@ -216,14 +221,15 @@ func (me *tmplDotField) fixedSize() int {
 	return me.fixedsize
 }
 
-func (me *tmplDotField) sizeHeur(exprPref string) string {
+func (me *tmplDotField) sizeHeur(exprPref string) *sizeHeuristics {
 	if fs := me.fixedSize(); fs > 0 {
-		return s(fs)
+		return &sizeHeuristics{Lit: fs}
+	} else {
+		if exprPref != "" {
+			exprPref += me.FName
+		}
+		return typeSizeHeur(me.finalTypeIdent(), exprPref)
 	}
-	if exprPref != "" {
-		exprPref += me.FName
-	}
-	return typeSizeHeur(me.finalTypeIdent(), exprPref)
 }
 
 func genViaTmpl() (src []byte, err error) {
@@ -240,4 +246,61 @@ func genViaTmpl() (src []byte, err error) {
 		}
 	}
 	return
+}
+
+type sizeHeuristics struct {
+	Expr  string
+	Lit   int
+	OpMul bool
+	OpAdd bool
+	Op1   *sizeHeuristics
+	Op2   *sizeHeuristics
+}
+
+func (me *sizeHeuristics) isLit() bool {
+	return (!me.OpAdd) && (!me.OpMul) && me.Expr == ""
+}
+
+func (me *sizeHeuristics) reduce() *sizeHeuristics {
+	if me.Op1 != nil && me.Op2 != nil {
+		me.Op1, me.Op2 = me.Op1.reduce(), me.Op2.reduce()
+		l1, l2 := me.Op1.Lit, me.Op2.Lit
+		o1, o2 := me.Op1.isLit(), me.Op2.isLit()
+		switch {
+		case me.OpMul:
+
+			if l1 == 1 {
+				return me.Op2
+			} else if l2 == 1 {
+				return me.Op1
+			} else if (o1 && l1 == 0) || (o2 && l2 == 0) {
+				return &sizeHeuristics{}
+			} else if o1 && o2 {
+				return &sizeHeuristics{Lit: l1 * l2}
+			}
+		case me.OpAdd:
+			if o1 && l1 == 0 {
+				return me.Op2
+			} else if o2 && l2 == 0 {
+				return me.Op1
+			} else if o1 && o2 {
+				return &sizeHeuristics{Lit: l1 + l2}
+			}
+		}
+	}
+	return me
+}
+
+func (me *sizeHeuristics) String() string {
+	switch {
+	case me.isLit():
+		return strconv.Itoa(me.Lit)
+	case me.Expr != "":
+		return me.Expr
+	case me.OpMul:
+		return "(" + me.Op1.String() + " * " + me.Op2.String() + ")"
+	case me.OpAdd:
+		return "(" + me.Op1.String() + " + " + me.Op2.String() + ")"
+	}
+	panic("forgot a case in switch?!")
 }

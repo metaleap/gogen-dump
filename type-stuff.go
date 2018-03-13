@@ -334,40 +334,40 @@ func ensureImportFor(typeSpec string) (pkgName []string) {
 	return nil
 }
 
-func typeSizeHeur(typeIdent string, expr string) (heur string) {
+func typeSizeHeur(typeIdent string, expr string) (heur *sizeHeuristics) {
 	mult, tident := sizedArrMultAndElemType(typeIdent)
 	if mult > 1 {
 		expr = ""
 	}
-	if l, fs := "", fixedSizeForTypeSpec(tident); fs > 0 {
-		heur = s(fs)
+	if fs := fixedSizeForTypeSpec(tident); fs > 0 {
+		heur = &sizeHeuristics{Lit: fs}
 	} else if tident[0] == '*' {
 		n := len(tident) - len(ustr.Skip(tident, '*'))
-		heur = "(" + s(n) + "+" + typeSizeHeur(tident[n:], "") + ")"
+		heur = &sizeHeuristics{Op1: &sizeHeuristics{Lit: n}, OpAdd: true, Op2: typeSizeHeur(tident[n:], "")}
 	} else if pclose := ustr.IdxBMatching(tident, ']', '['); tident[0] == '[' && pclose == 1 {
+		exprlen := &sizeHeuristics{Lit: optHeuriticLenSlices}
 		if expr != "" {
-			l = "len(" + expr + ") * "
-		} else {
-			l = optHeuriticLenSlices + " * "
+			exprlen = &sizeHeuristics{Expr: "len(" + expr + ")"}
 		}
-		heur = "(8 + (" + l + typeSizeHeur(tident[2:], "") + "))"
+		heur = &sizeHeuristics{Op1: &sizeHeuristics{Lit: 8}, OpAdd: true, Op2: &sizeHeuristics{Op1: exprlen, OpMul: true, Op2: typeSizeHeur(tident[2:], "")}}
 	} else if ustr.Pref(tident, "map[") {
+		exprlen := &sizeHeuristics{Lit: optHeuristicLenMaps}
 		if expr != "" {
-			l = "len(" + expr + ") * "
-		} else {
-			l = optHeuristicLenMaps + " * "
+			exprlen = &sizeHeuristics{Expr: "len(" + expr + ")"}
 		}
 		tkey, tval := tident[4:pclose], tident[pclose+1:]
-		heur = "(8 + (" + l + typeSizeHeur(tkey, "") + ") + (" + l + typeSizeHeur(tval, "") + "))"
+		xkey := &sizeHeuristics{Op1: exprlen, OpMul: true, Op2: typeSizeHeur(tkey, "")}
+		xval := &sizeHeuristics{Op1: exprlen, OpMul: true, Op2: typeSizeHeur(tval, "")}
+		heur = &sizeHeuristics{Op1: &sizeHeuristics{Lit: 8}, OpAdd: true,
+			Op2: &sizeHeuristics{Op1: xkey, OpAdd: true, Op2: xval}}
 	} else if tident == "int" || tident == "uint" || tident == "uintptr" { // varints possibly not covered by above fixedSize handling
-		heur = "8"
+		heur = &sizeHeuristics{Lit: 8}
 	} else if tident == "string" {
+		exprlen := &sizeHeuristics{Lit: optHeuristicLenStrings}
 		if expr != "" {
-			l = "len(" + expr + ")"
-		} else {
-			l = optHeuristicLenStrings
+			exprlen = &sizeHeuristics{Expr: "len(" + expr + ")"}
 		}
-		heur = "(8 + " + l + ")"
+		heur = &sizeHeuristics{Op1: &sizeHeuristics{Lit: 8}, OpAdd: true, Op2: exprlen}
 	} else if tsyn := typeSyns[tident]; tsyn != "" {
 		heur = typeSizeHeur(tsyn, expr)
 	} else {
@@ -379,11 +379,11 @@ func typeSizeHeur(typeIdent string, expr string) (heur string) {
 		}
 	}
 
-	if heur == "" {
-		heur = optHeuristicSizeUnknowns
+	if heur == nil {
+		heur = &sizeHeuristics{Lit: optHeuristicSizeUnknowns}
 	}
 	if mult > 1 {
-		heur = "(" + s(mult) + "*(" + heur + "))"
+		heur = &sizeHeuristics{Op1: &sizeHeuristics{Lit: mult}, OpMul: true, Op2: heur}
 	}
 	return
 }

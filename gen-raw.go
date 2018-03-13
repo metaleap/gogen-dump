@@ -34,7 +34,7 @@ func genDump() error {
 				}
 			}
 		}
-		tdt.InitialBufSize = tdt.sizeHeur("me.")
+		tdt.InitialBufSize = tdt.sizeHeur("me.").reduce().String()
 	}
 
 	genFileName = filepath.Join(goPkgDirPath, genFileName)
