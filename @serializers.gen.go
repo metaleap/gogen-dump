@@ -37,7 +37,7 @@ import (
    - Schools - *[]*school
 */
 
-func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lName := (len(me.Name))
@@ -49,7 +49,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 		buf.WriteByte(0)
 	} else {
 		buf.WriteByte(1)
-		if err = me.ClosestTo.marshalTo(buf); err != nil {
+		if err = me.ClosestTo.marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
@@ -58,7 +58,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 		lCompanies := (len(me.Companies))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lCompanies))[:])
 		for i0 := 0; i0 < (lCompanies); i0++ {
-			if err = me.Companies[i0].marshalTo(buf); err != nil {
+			if err = me.Companies[i0].marshalTo(buf, addrs); err != nil {
 				return
 			}
 		}
@@ -73,7 +73,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 			lFamilies := (len(pv000))
 			buf.Write((*[8]byte)(unsafe.Pointer(&lFamilies))[:])
 			for i0 := 0; i0 < (lFamilies); i0++ {
-				if err = pv000[i0].marshalTo(buf); err != nil {
+				if err = pv000[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -93,7 +93,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 					buf.WriteByte(0)
 				} else {
 					buf.WriteByte(1)
-					if err = pv000[i0].marshalTo(buf); err != nil {
+					if err = pv000[i0].marshalTo(buf, addrs); err != nil {
 						return
 					}
 				}
@@ -106,14 +106,15 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *city) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((((8 + len(me.Name)) + 9) + (8 + (len(me.Companies) * 1074))) + 151) + 4099)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -127,7 +128,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 		var p000 *city
 		if p++; data[p-1] != 0 {
 			v100 := city{}
-			if err = v100.unmarshalFrom(&p, data); err != nil {
+			if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 				return
 			}
 			p000 = &v100
@@ -140,7 +141,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 		p += 8
 		me.Companies = make([]company, lCompanies)
 		for i0 := 0; i0 < (lCompanies); i0++ {
-			if err = me.Companies[i0].unmarshalFrom(&p, data); err != nil {
+			if err = me.Companies[i0].unmarshalFrom(&p, data, addrs); err != nil {
 				return
 			}
 		}
@@ -154,7 +155,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 			v100 := make([]family, lFamilies)
 			for i0 := 0; i0 < (lFamilies); i0++ {
 				v100[i0] = family{}
-				if err = v100[i0].unmarshalFrom(&p, data); err != nil {
+				if err = v100[i0].unmarshalFrom(&p, data, addrs); err != nil {
 					return
 				}
 			}
@@ -174,7 +175,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 					var p010 *school
 					if p++; data[p-1] != 0 {
 						v110 := school{}
-						if err = v110.unmarshalFrom(&p, data); err != nil {
+						if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 							return
 						}
 						p010 = &v110
@@ -193,14 +194,16 @@ func (me *city) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *city) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *city) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -210,7 +213,7 @@ func (me *city) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -221,8 +224,9 @@ func (me *city) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *city) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((((8 + len(me.Name)) + 9) + (8 + (len(me.Companies) * 1074))) + 151) + 4099)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{2107167618815528383, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -244,7 +248,7 @@ func (me *city) WriteTo(w io.Writer) (n int64, err error) {
    - Staff - []*person
 */
 
-func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *company) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lSuppliers := (len(me.Suppliers))
@@ -254,7 +258,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = me.Suppliers[i0].marshalTo(buf); err != nil {
+				if err = me.Suppliers[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -269,7 +273,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = me.Clients[i0].marshalTo(buf); err != nil {
+				if err = me.Clients[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -284,7 +288,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = me.Staff[i0].marshalTo(buf); err != nil {
+				if err = me.Staff[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -296,14 +300,15 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *company) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((8 + (len(me.Suppliers) * 9)) + (8 + (len(me.Clients) * 9))) + (8 + (len(me.Staff) * 507)))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *company) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -315,7 +320,7 @@ func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p010 *company
 				if p++; data[p-1] != 0 {
 					v110 := company{}
-					if err = v110.unmarshalFrom(&p, data); err != nil {
+					if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p010 = &v110
@@ -334,7 +339,7 @@ func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p010 *company
 				if p++; data[p-1] != 0 {
 					v110 := company{}
-					if err = v110.unmarshalFrom(&p, data); err != nil {
+					if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p010 = &v110
@@ -353,7 +358,7 @@ func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p010 *person
 				if p++; data[p-1] != 0 {
 					v110 := person{}
-					if err = v110.unmarshalFrom(&p, data); err != nil {
+					if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p010 = &v110
@@ -369,14 +374,16 @@ func (me *company) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *company) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *company) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -386,7 +393,7 @@ func (me *company) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -397,8 +404,9 @@ func (me *company) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *company) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((8 + (len(me.Suppliers) * 9)) + (8 + (len(me.Clients) * 9))) + (8 + (len(me.Staff) * 507)))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{1099423678947472881, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -419,7 +427,7 @@ func (me *company) WriteTo(w io.Writer) (n int64, err error) {
    - Pets - map[string]*petAnimal = [ *petCat | *petDog | *petHamster | *petPiranha ]
 */
 
-func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *family) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lLastName := (len(me.LastName))
@@ -446,7 +454,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 							buf.WriteByte(0)
 						} else {
 							buf.WriteByte(1)
-							if err = t.marshalTo(buf); err != nil {
+							if err = t.marshalTo(buf, addrs); err != nil {
 								return
 							}
 						}
@@ -456,7 +464,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 							buf.WriteByte(0)
 						} else {
 							buf.WriteByte(1)
-							if err = t.marshalTo(buf); err != nil {
+							if err = t.marshalTo(buf, addrs); err != nil {
 								return
 							}
 						}
@@ -466,7 +474,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 							buf.WriteByte(0)
 						} else {
 							buf.WriteByte(1)
-							if err = t.marshalTo(buf); err != nil {
+							if err = t.marshalTo(buf, addrs); err != nil {
 								return
 							}
 						}
@@ -476,7 +484,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 							buf.WriteByte(0)
 						} else {
 							buf.WriteByte(1)
-							if err = t.marshalTo(buf); err != nil {
+							if err = t.marshalTo(buf, addrs); err != nil {
 								return
 							}
 						}
@@ -496,14 +504,15 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *family) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + len(me.LastName)) + (8 + ((len(me.Pets) * 15) + (len(me.Pets) * 9))))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *family) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -538,7 +547,7 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 								var p010 *petCat
 								if p++; data[p-1] != 0 {
 									v110 := petCat{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
+									if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 										return
 									}
 									p010 = &v110
@@ -552,7 +561,7 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 								var p010 *petDog
 								if p++; data[p-1] != 0 {
 									v110 := petDog{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
+									if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 										return
 									}
 									p010 = &v110
@@ -566,7 +575,7 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 								var p010 *petHamster
 								if p++; data[p-1] != 0 {
 									v110 := petHamster{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
+									if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 										return
 									}
 									p010 = &v110
@@ -580,7 +589,7 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 								var p010 *petPiranha
 								if p++; data[p-1] != 0 {
 									v110 := petPiranha{}
-									if err = v110.unmarshalFrom(&p, data); err != nil {
+									if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 										return
 									}
 									p010 = &v110
@@ -606,14 +615,16 @@ func (me *family) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *family) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *family) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -623,7 +634,7 @@ func (me *family) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -634,8 +645,9 @@ func (me *family) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *family) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + len(me.LastName)) + (8 + ((len(me.Pets) * 15) + (len(me.Pets) * 9))))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{4523365645226592426, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -667,7 +679,7 @@ func (me *family) WriteTo(w io.Writer) (n int64, err error) {
    - sixt2 - [6][7]complex384, 2016b
 */
 
-func (me *fixedSize) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *fixedSize) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	buf.Write((*[3384]byte)(unsafe.Pointer(me))[:])
 
@@ -676,14 +688,15 @@ func (me *fixedSize) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *fixedSize) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, 3384))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *fixedSize) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *fixedSize) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	*me = *((*fixedSize)(unsafe.Pointer(&data[p])))
@@ -695,14 +708,16 @@ func (me *fixedSize) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *fixedSize) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *fixedSize) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -712,7 +727,7 @@ func (me *fixedSize) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -723,8 +738,9 @@ func (me *fixedSize) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, 3384))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{3387551728070519514, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -751,7 +767,7 @@ func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
    - Description - *string
 */
 
-func (me *hobby) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *hobby) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lName := (len(me.Name))
@@ -778,14 +794,15 @@ func (me *hobby) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *hobby) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((((8 + len(me.Name)) + 8) + 16) + 1) + 4) + 16) + 1) + 16)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *hobby) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *hobby) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -816,14 +833,16 @@ func (me *hobby) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *hobby) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *hobby) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -833,7 +852,7 @@ func (me *hobby) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -844,8 +863,9 @@ func (me *hobby) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *hobby) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((((8 + len(me.Name)) + 8) + 16) + 1) + 4) + 16) + 1) + 16)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{5837267412986298571, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -870,7 +890,7 @@ func (me *hobby) WriteTo(w io.Writer) (n int64, err error) {
    - Top5Hobbies - [5]hobby
 */
 
-func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lFirstName := (len(me.FirstName))
@@ -882,7 +902,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 		buf.WriteByte(0)
 	} else {
 		buf.WriteByte(1)
-		if err = me.Family.marshalTo(buf); err != nil {
+		if err = me.Family.marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
@@ -902,7 +922,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 			buf.WriteByte(0)
 		} else {
 			buf.WriteByte(1)
-			if err = me.Parents[i0].marshalTo(buf); err != nil {
+			if err = me.Parents[i0].marshalTo(buf, addrs); err != nil {
 				return
 			}
 		}
@@ -916,7 +936,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = t.marshalTo(buf); err != nil {
+				if err = t.marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -926,7 +946,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = t.marshalTo(buf); err != nil {
+				if err = t.marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -936,7 +956,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = t.marshalTo(buf); err != nil {
+				if err = t.marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -946,7 +966,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = t.marshalTo(buf); err != nil {
+				if err = t.marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -959,7 +979,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 	}
 
 	for i0 := 0; i0 < 5; i0++ {
-		if err = me.Top5Hobbies[i0].marshalTo(buf); err != nil {
+		if err = me.Top5Hobbies[i0].marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
@@ -969,14 +989,15 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *person) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((8 + len(me.FirstName)) + 72) + 8) + 18) + 8) + 385)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -990,7 +1011,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 		var p000 *family
 		if p++; data[p-1] != 0 {
 			v100 := family{}
-			if err = v100.unmarshalFrom(&p, data); err != nil {
+			if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 				return
 			}
 			p000 = &v100
@@ -1014,7 +1035,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 			var p010 *person
 			if p++; data[p-1] != 0 {
 				v110 := person{}
-				if err = v110.unmarshalFrom(&p, data); err != nil {
+				if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 					return
 				}
 				p010 = &v110
@@ -1033,7 +1054,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p000 *petCat
 				if p++; data[p-1] != 0 {
 					v100 := petCat{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
+					if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p000 = &v100
@@ -1047,7 +1068,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p000 *petDog
 				if p++; data[p-1] != 0 {
 					v100 := petDog{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
+					if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p000 = &v100
@@ -1061,7 +1082,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p000 *petHamster
 				if p++; data[p-1] != 0 {
 					v100 := petHamster{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
+					if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p000 = &v100
@@ -1075,7 +1096,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p000 *petPiranha
 				if p++; data[p-1] != 0 {
 					v100 := petPiranha{}
-					if err = v100.unmarshalFrom(&p, data); err != nil {
+					if err = v100.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p000 = &v100
@@ -1089,7 +1110,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 	}
 
 	for i0 := 0; i0 < 5; i0++ {
-		if err = me.Top5Hobbies[i0].unmarshalFrom(&p, data); err != nil {
+		if err = me.Top5Hobbies[i0].unmarshalFrom(&p, data, addrs); err != nil {
 			return
 		}
 	}
@@ -1100,14 +1121,16 @@ func (me *person) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *person) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *person) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1117,7 +1140,7 @@ func (me *person) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1128,8 +1151,9 @@ func (me *person) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *person) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((8 + len(me.FirstName)) + 72) + 8) + 18) + 8) + 385)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{11925296559860657288, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1154,7 +1178,7 @@ func (me *person) WriteTo(w io.Writer) (n int64, err error) {
    - OrigCostIfKnown - *complex128
 */
 
-func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *pet) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	buf.Write((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))[:])
 
@@ -1195,14 +1219,15 @@ func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *pet) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.LastIllness.Notes) * 15))) + 17)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *pet) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *pet) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	*((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))) = *((*[20]byte)(unsafe.Pointer(&data[p])))
@@ -1255,14 +1280,16 @@ func (me *pet) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *pet) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *pet) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1272,7 +1299,7 @@ func (me *pet) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1283,8 +1310,9 @@ func (me *pet) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *pet) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.LastIllness.Notes) * 15))) + 17)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{13186359848934745181, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1305,9 +1333,9 @@ func (me *pet) WriteTo(w io.Writer) (n int64, err error) {
    - RabbitsSlaynPerDayOnAvg - *uint8
 */
 
-func (me *petCat) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *petCat) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
-	if err = me.pet.marshalTo(buf); err != nil {
+	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
 
@@ -1323,17 +1351,18 @@ func (me *petCat) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *petCat) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 2)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *petCat) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *petCat) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
-	if err = me.pet.unmarshalFrom(&p, data); err != nil {
+	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
 
@@ -1353,14 +1382,16 @@ func (me *petCat) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *petCat) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petCat) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1370,7 +1401,7 @@ func (me *petCat) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1381,8 +1412,9 @@ func (me *petCat) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *petCat) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 2)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{13481110904349996911, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1403,9 +1435,9 @@ func (me *petCat) WriteTo(w io.Writer) (n int64, err error) {
    - WalkLog - *map[*time.Time][7]time.Duration
 */
 
-func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *petDog) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
-	if err = me.pet.marshalTo(buf); err != nil {
+	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
 
@@ -1442,17 +1474,18 @@ func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *petDog) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 139)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *petDog) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *petDog) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
-	if err = me.pet.unmarshalFrom(&p, data); err != nil {
+	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
 
@@ -1498,14 +1531,16 @@ func (me *petDog) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *petDog) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petDog) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1515,7 +1550,7 @@ func (me *petDog) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1526,8 +1561,9 @@ func (me *petDog) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *petDog) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 139)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{3596748310628763049, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1547,9 +1583,9 @@ func (me *petDog) WriteTo(w io.Writer) (n int64, err error) {
    - pet - pet
 */
 
-func (me *petHamster) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *petHamster) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
-	if err = me.pet.marshalTo(buf); err != nil {
+	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
 
@@ -1558,17 +1594,18 @@ func (me *petHamster) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *petHamster) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *petHamster) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *petHamster) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
-	if err = me.pet.unmarshalFrom(&p, data); err != nil {
+	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
 
@@ -1578,14 +1615,16 @@ func (me *petHamster) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *petHamster) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petHamster) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1595,7 +1634,7 @@ func (me *petHamster) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1606,8 +1645,9 @@ func (me *petHamster) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *petHamster) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17)))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{13333275131017623849, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1628,9 +1668,9 @@ func (me *petHamster) WriteTo(w io.Writer) (n int64, err error) {
    - Weird - map[*[2048]byte][]fixedSize
 */
 
-func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *petPiranha) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
-	if err = me.pet.marshalTo(buf); err != nil {
+	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
 
@@ -1661,17 +1701,18 @@ func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *petPiranha) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + (8 + ((len(me.Weird) * 2049) + (len(me.Weird) * 6776))))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *petPiranha) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *petPiranha) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
-	if err = me.pet.unmarshalFrom(&p, data); err != nil {
+	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
 
@@ -1714,14 +1755,16 @@ func (me *petPiranha) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *petPiranha) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petPiranha) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1731,7 +1774,7 @@ func (me *petPiranha) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1742,8 +1785,9 @@ func (me *petPiranha) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *petPiranha) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + (8 + ((len(me.Weird) * 2049) + (len(me.Weird) * 6776))))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{11146996824496730984, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1764,7 +1808,7 @@ func (me *petPiranha) WriteTo(w io.Writer) (n int64, err error) {
    - Pupils - []*person
 */
 
-func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *school) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	{
 		lTeachers := (len(me.Teachers))
@@ -1774,7 +1818,7 @@ func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = me.Teachers[i0].marshalTo(buf); err != nil {
+				if err = me.Teachers[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -1789,7 +1833,7 @@ func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 				buf.WriteByte(0)
 			} else {
 				buf.WriteByte(1)
-				if err = me.Pupils[i0].marshalTo(buf); err != nil {
+				if err = me.Pupils[i0].marshalTo(buf, addrs); err != nil {
 					return
 				}
 			}
@@ -1801,14 +1845,15 @@ func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *school) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + (len(me.Teachers) * 507)) + (8 + (len(me.Pupils) * 507)))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *school) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *school) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	{
@@ -1820,7 +1865,7 @@ func (me *school) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p010 *person
 				if p++; data[p-1] != 0 {
 					v110 := person{}
-					if err = v110.unmarshalFrom(&p, data); err != nil {
+					if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p010 = &v110
@@ -1839,7 +1884,7 @@ func (me *school) unmarshalFrom(pos *int, data []byte) (err error) {
 				var p010 *person
 				if p++; data[p-1] != 0 {
 					v110 := person{}
-					if err = v110.unmarshalFrom(&p, data); err != nil {
+					if err = v110.unmarshalFrom(&p, data, addrs); err != nil {
 						return
 					}
 					p010 = &v110
@@ -1855,14 +1900,16 @@ func (me *school) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *school) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *school) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1872,7 +1919,7 @@ func (me *school) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1883,8 +1930,9 @@ func (me *school) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *school) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + (len(me.Teachers) * 507)) + (8 + (len(me.Pupils) * 507)))))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{11190834307079325616, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -1904,10 +1952,10 @@ func (me *school) WriteTo(w io.Writer) (n int64, err error) {
    - Cities - [123]city
 */
 
-func (me *simWorld) marshalTo(buf *bytes.Buffer) (err error) {
+func (me *simWorld) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
 
 	for i0 := 0; i0 < 123; i0++ {
-		if err = me.Cities[i0].marshalTo(buf); err != nil {
+		if err = me.Cities[i0].marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
@@ -1917,18 +1965,19 @@ func (me *simWorld) marshalTo(buf *bytes.Buffer) (err error) {
 
 // MarshalBinary implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`).
 func (me *simWorld) MarshalBinary() (data []byte, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, 790890))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		data = buf.Bytes()
 	}
 	return
 }
 
-func (me *simWorld) unmarshalFrom(pos *int, data []byte) (err error) {
+func (me *simWorld) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
 
 	for i0 := 0; i0 < 123; i0++ {
-		if err = me.Cities[i0].unmarshalFrom(&p, data); err != nil {
+		if err = me.Cities[i0].unmarshalFrom(&p, data, addrs); err != nil {
 			return
 		}
 	}
@@ -1939,14 +1988,16 @@ func (me *simWorld) unmarshalFrom(pos *int, data []byte) (err error) {
 
 // UnmarshalBinary implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`.
 func (me *simWorld) UnmarshalBinary(data []byte) (err error) {
+	var addrs map[uint64]uintptr
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data)
+	err = me.unmarshalFrom(&pos0, data, addrs)
 	return
 }
 
 // ReadFrom implements `io.ReaderFrom` by deserializing from `r` into `me`.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *simWorld) ReadFrom(r io.Reader) (int64, error) {
+	var addrs map[uint64]uintptr
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -1956,7 +2007,7 @@ func (me *simWorld) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data)
+				err = me.unmarshalFrom(&pos0, data, addrs)
 			}
 			n += 16
 		}
@@ -1967,8 +2018,9 @@ func (me *simWorld) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo implements `io.WriterTo` by serializing `me` to `w`.
 // `WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively.
 func (me *simWorld) WriteTo(w io.Writer) (n int64, err error) {
+	var addrs map[uintptr]uint64
 	buf := bytes.NewBuffer(make([]byte, 0, 790890))
-	if err = me.marshalTo(buf); err == nil {
+	if err = me.marshalTo(buf, addrs); err == nil {
 		header := [2]uint64{16380748744573418520, uint64(buf.Len())}
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {

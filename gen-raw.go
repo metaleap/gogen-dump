@@ -284,8 +284,8 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')
 						}
-						tmplR = "if err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(&p, data); err != nil { return } ; "
-						tmplW = "if err = " + mfw + ".marshalTo(buf); err != nil { return } ; "
+						tmplR = "if err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(&p, data, addrs); err != nil { return } ; "
+						tmplW = "if err = " + mfw + ".marshalTo(buf, addrs); err != nil { return } ; "
 						break
 					}
 				}

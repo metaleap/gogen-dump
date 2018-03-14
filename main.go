@@ -158,7 +158,7 @@ func main() {
 		}
 	}
 
-	if tdot.BBuf.Stdlib = optStdlibBytesBuffer; tdot.BBuf.Stdlib {
+	if tdot.SharedAddrs, tdot.BBuf.Stdlib = optSharedRefs, optStdlibBytesBuffer; tdot.BBuf.Stdlib {
 		tdot.BBuf.Bytes = "buf.Bytes()"
 		tdot.BBuf.Ctor = "bytes.NewBuffer"
 		tdot.BBuf.Len = "buf.Len()"
