@@ -16,7 +16,7 @@ const tmplSrc = `package {{.PName}}
 {{ $bCtor := .BBuf.Ctor }}
 {{ $bType := .BBuf.Type }}
 
-// This file consists {{if .BBuf.Stdlib}}solely{{else}}largely{{end}} of generated (de)serialization methods for these {{len .Structs}} struct types:
+// This file consists {{if .BBuf.Stdlib}}solely{{else}}largely{{end}} of generated (de)serialization methods for the following {{len .Structs}} struct type(s).
 {{range .Structs}}// - {{.TName}} (signature: {{.StructuralHash}})
 {{end}}
 import (
