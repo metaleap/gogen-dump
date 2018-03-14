@@ -48,7 +48,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 	if me.ClosestTo == nil {
 		buf.WriteByte(0)
 	} else {
-		buf.WriteByte(1) /*pv0*/
+		buf.WriteByte(1)
 		if err = me.ClosestTo.marshalTo(buf); err != nil {
 			return
 		}
@@ -92,7 +92,7 @@ func (me *city) marshalTo(buf *bytes.Buffer) (err error) {
 				if pv000[i0] == nil {
 					buf.WriteByte(0)
 				} else {
-					buf.WriteByte(1) /*pv0*/
+					buf.WriteByte(1)
 					if err = pv000[i0].marshalTo(buf); err != nil {
 						return
 					}
@@ -253,7 +253,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 			if me.Suppliers[i0] == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = me.Suppliers[i0].marshalTo(buf); err != nil {
 					return
 				}
@@ -268,7 +268,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 			if me.Clients[i0] == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = me.Clients[i0].marshalTo(buf); err != nil {
 					return
 				}
@@ -283,7 +283,7 @@ func (me *company) marshalTo(buf *bytes.Buffer) (err error) {
 			if me.Staff[i0] == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = me.Staff[i0].marshalTo(buf); err != nil {
 					return
 				}
@@ -437,7 +437,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 			if m0 == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				{
 					switch t := (*m0).(type) {
 					case *petCat:
@@ -445,7 +445,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 						if t == nil {
 							buf.WriteByte(0)
 						} else {
-							buf.WriteByte(1) /*pv0*/
+							buf.WriteByte(1)
 							if err = t.marshalTo(buf); err != nil {
 								return
 							}
@@ -455,7 +455,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 						if t == nil {
 							buf.WriteByte(0)
 						} else {
-							buf.WriteByte(1) /*pv0*/
+							buf.WriteByte(1)
 							if err = t.marshalTo(buf); err != nil {
 								return
 							}
@@ -465,7 +465,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 						if t == nil {
 							buf.WriteByte(0)
 						} else {
-							buf.WriteByte(1) /*pv0*/
+							buf.WriteByte(1)
 							if err = t.marshalTo(buf); err != nil {
 								return
 							}
@@ -475,7 +475,7 @@ func (me *family) marshalTo(buf *bytes.Buffer) (err error) {
 						if t == nil {
 							buf.WriteByte(0)
 						} else {
-							buf.WriteByte(1) /*pv0*/
+							buf.WriteByte(1)
 							if err = t.marshalTo(buf); err != nil {
 								return
 							}
@@ -881,7 +881,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 	if me.Family == nil {
 		buf.WriteByte(0)
 	} else {
-		buf.WriteByte(1) /*pv0*/
+		buf.WriteByte(1)
 		if err = me.Family.marshalTo(buf); err != nil {
 			return
 		}
@@ -901,7 +901,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 		if me.Parents[i0] == nil {
 			buf.WriteByte(0)
 		} else {
-			buf.WriteByte(1) /*pv0*/
+			buf.WriteByte(1)
 			if err = me.Parents[i0].marshalTo(buf); err != nil {
 				return
 			}
@@ -915,7 +915,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 			if t == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = t.marshalTo(buf); err != nil {
 					return
 				}
@@ -925,7 +925,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 			if t == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = t.marshalTo(buf); err != nil {
 					return
 				}
@@ -935,7 +935,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 			if t == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = t.marshalTo(buf); err != nil {
 					return
 				}
@@ -945,7 +945,7 @@ func (me *person) marshalTo(buf *bytes.Buffer) (err error) {
 			if t == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = t.marshalTo(buf); err != nil {
 					return
 				}
@@ -1161,7 +1161,7 @@ func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 	if me.LastIllness.Date == nil {
 		buf.WriteByte(0)
 	} else {
-		buf.WriteByte(1) /*pv0*/
+		buf.WriteByte(1)
 		{
 			d, e := me.LastIllness.Date.MarshalBinary()
 			if err = e; err != nil {
@@ -1186,7 +1186,7 @@ func (me *pet) marshalTo(buf *bytes.Buffer) (err error) {
 	if me.OrigCostIfKnown == nil {
 		buf.WriteByte(0)
 	} else {
-		buf.WriteByte(1) /*pv0*/
+		buf.WriteByte(1)
 		buf.Write(((*[16]byte)(unsafe.Pointer(me.OrigCostIfKnown)))[:])
 	}
 
@@ -1314,7 +1314,7 @@ func (me *petCat) marshalTo(buf *bytes.Buffer) (err error) {
 	if me.RabbitsSlaynPerDayOnAvg == nil {
 		buf.WriteByte(0)
 	} else {
-		buf.WriteByte(1) /*pv0*/
+		buf.WriteByte(1)
 		buf.WriteByte((*me.RabbitsSlaynPerDayOnAvg))
 	}
 
@@ -1421,7 +1421,7 @@ func (me *petDog) marshalTo(buf *bytes.Buffer) (err error) {
 				if k0 == nil {
 					buf.WriteByte(0)
 				} else {
-					buf.WriteByte(1) /*pv0*/
+					buf.WriteByte(1)
 					{
 						d, e := k0.MarshalBinary()
 						if err = e; err != nil {
@@ -1641,7 +1641,7 @@ func (me *petPiranha) marshalTo(buf *bytes.Buffer) (err error) {
 			if k0 == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				buf.Write(((*[2048]byte)(unsafe.Pointer(k0)))[:])
 			}
 			lm0 := (len(m0))
@@ -1773,7 +1773,7 @@ func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 			if me.Teachers[i0] == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = me.Teachers[i0].marshalTo(buf); err != nil {
 					return
 				}
@@ -1788,7 +1788,7 @@ func (me *school) marshalTo(buf *bytes.Buffer) (err error) {
 			if me.Pupils[i0] == nil {
 				buf.WriteByte(0)
 			} else {
-				buf.WriteByte(1) /*pv0*/
+				buf.WriteByte(1)
 				if err = me.Pupils[i0].marshalTo(buf); err != nil {
 					return
 				}

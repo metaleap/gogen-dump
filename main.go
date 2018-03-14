@@ -66,7 +66,7 @@ func main() {
 			// any flags?
 			opts := map[string]*bool{
 				"safeVarints":            &optSafeVarints,
-				"varintsNotFixedSize":    &optSafeVarints,
+				"varintsNotFixedSize":    &optVarintsNotFixedSize,
 				"ignoreUnknownTypeCases": &optIgnoreUnknownTypeCases,
 				"noFixedSizeCode":        &optNoFixedSizeCode,
 				"stdlibBytesBuffer":      &optStdlibBytesBuffer,
