@@ -81,13 +81,14 @@ func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from ` + "`WriteTo`" + `, any remainder remains unread.
 func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != {{.StructuralHash}} {
 			err = errors.New("{{.TName}}: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -102,9 +103,13 @@ func (me *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
 	buf := {{$bCtor}}(make([]byte, 0, {{.InitialBufSize}}))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64 { {{.StructuralHash}}, uint64({{$bLen}}) }
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = {{$bWriteTo}}(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = {{$bWriteTo}}(w)
+			n += 16
+		}
 	}
 	return
 }

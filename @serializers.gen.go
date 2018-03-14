@@ -193,13 +193,14 @@ func (me *city) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *city) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 6593994633469704441 {
 			err = errors.New("city: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -214,9 +215,13 @@ func (me *city) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (((((8 + len(me.Name)) + 9) + (8 + (len(me.Companies) * 1074))) + 151) + (8 + (len(me.Schools) * 2045)))))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{6593994633469704441, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -367,13 +372,14 @@ func (me *company) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *company) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 1099423678947472881 {
 			err = errors.New("company: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -388,9 +394,13 @@ func (me *company) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (((8 + (len(me.Suppliers) * 9)) + (8 + (len(me.Clients) * 9))) + (8 + (len(me.Staff) * 507)))))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{1099423678947472881, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -604,13 +614,14 @@ func (me *family) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *family) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 4523365645226592426 {
 			err = errors.New("family: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -625,9 +636,13 @@ func (me *family) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + len(me.LastName)) + (8 + ((len(me.Pets) * 15) + (len(me.Pets) * 9))))))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{4523365645226592426, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -688,13 +703,14 @@ func (me *fixedSize) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *fixedSize) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 3387551728070519514 {
 			err = errors.New("fixedSize: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -709,9 +725,13 @@ func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 3384))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{3387551728070519514, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -804,13 +824,14 @@ func (me *hobby) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *hobby) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 5837267412986298571 {
 			err = errors.New("hobby: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -825,9 +846,13 @@ func (me *hobby) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((((8 + len(me.Name)) + 8) + 16) + 1) + 4) + 16) + 1) + 16)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{5837267412986298571, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1089,13 +1114,14 @@ func (me *person) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *person) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 11925296559860657288 {
 			err = errors.New("person: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1110,9 +1136,13 @@ func (me *person) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((((((8 + len(me.FirstName)) + 72) + 8) + 18) + 8) + 385)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{11925296559860657288, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1241,13 +1271,14 @@ func (me *pet) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *pet) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 13186359848934745181 {
 			err = errors.New("pet: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1262,9 +1293,13 @@ func (me *pet) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.LastIllness.Notes) * 15))) + 17)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{13186359848934745181, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1335,13 +1370,14 @@ func (me *petCat) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petCat) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 13481110904349996911 {
 			err = errors.New("petCat: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1356,9 +1392,13 @@ func (me *petCat) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 2)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{13481110904349996911, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1476,13 +1516,14 @@ func (me *petDog) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petDog) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 3596748310628763049 {
 			err = errors.New("petDog: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1497,9 +1538,13 @@ func (me *petDog) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + 139)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{3596748310628763049, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1551,13 +1596,14 @@ func (me *petHamster) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petHamster) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 13333275131017623849 {
 			err = errors.New("petHamster: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1572,9 +1618,13 @@ func (me *petHamster) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17)))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{13333275131017623849, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1683,13 +1733,14 @@ func (me *petPiranha) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *petPiranha) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 11146996824496730984 {
 			err = errors.New("petPiranha: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1704,9 +1755,13 @@ func (me *petPiranha) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, (((29 + (8 + (len(me.pet.LastIllness.Notes) * 15))) + 17) + (8 + ((len(me.Weird) * 2049) + (len(me.Weird) * 6776))))))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{11146996824496730984, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1821,13 +1876,14 @@ func (me *school) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *school) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 11190834307079325616 {
 			err = errors.New("school: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1842,9 +1898,13 @@ func (me *school) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, ((8 + (len(me.Teachers) * 507)) + (8 + (len(me.Pupils) * 507)))))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{11190834307079325616, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
@@ -1900,13 +1960,14 @@ func (me *simWorld) UnmarshalBinary(data []byte) (err error) {
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from `WriteTo`, any remainder remains unread.
 func (me *simWorld) ReadFrom(r io.Reader) (int64, error) {
 	var header [2]uint64
-	n, err := io.ReadFull(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:])
+	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
 		if header[0] != 13412975302553189149 {
 			err = errors.New("simWorld: incompatible signature header")
 		} else {
-			pos0, data := 0, make([]byte, header[1])
-			if n, err = io.ReadFull(r, data); err == nil {
+			data := make([]byte, header[1])
+			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
+				var pos0 int
 				err = me.unmarshalFrom(&pos0, data)
 			}
 			n += 16
@@ -1921,9 +1982,13 @@ func (me *simWorld) WriteTo(w io.Writer) (n int64, err error) {
 	buf := bytes.NewBuffer(make([]byte, 0, 790767))
 	if err = me.marshalTo(buf); err == nil {
 		header := [2]uint64{13412975302553189149, uint64(buf.Len())}
-		w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:])
-		n, err = buf.WriteTo(w)
-		n += 16
+		var l int
+		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
+			n = int64(l)
+		} else {
+			n, err = buf.WriteTo(w)
+			n += 16
+		}
 	}
 	return
 }
