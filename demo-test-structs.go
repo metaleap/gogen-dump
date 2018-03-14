@@ -14,7 +14,7 @@ type city struct {
 	ClosestTo *city
 	Companies []company
 	Families  *[]family
-	Schools   []*school
+	Schools   *[]*school
 }
 
 type company struct {

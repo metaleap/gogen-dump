@@ -63,14 +63,17 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 	}
 	if numIndir > 0 {
 		if mfr = "v" + s(numIndir) + s(iterDepth) + s(len(taggedUnion)) + ":"; tmpVarPref != "" {
-			mfw = tmpVarPref + s(numIndir-1) + s(iterDepth) + s(len(taggedUnion)) //  "(" + ustr.Times("*", numIndir) + mfw + ")"
+			mfw = tmpVarPref + s(numIndir-1) + s(iterDepth) + s(len(taggedUnion))
 		}
 	} else if altNoMe == "" && tmpVarPref != "" {
 		mfr = tmpVarPref // + nfr
 	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "k") || ustr.Pref(nf, "m")) {
 		mfr = "b" + nf
 	}
-	mfwd := "(" + ustr.Times("*", numIndir) + mfw + ")"
+	mfwd := mfw
+	if numIndir > 0 {
+		mfwd = "(" + ustr.Times("*", numIndir) + mfw + ")"
+	}
 	var cast string
 	if optSafeVarints {
 		cast = "uint64"
@@ -83,7 +86,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		tmplW = "b·writeB(" + mfwd + ")"
 		tmplR = mfr + "= data[p] ; p++ "
 	case "int8":
-		tmplW = genSizedW(nfr, mfw, "1")
+		tmplW = genSizedW(nfr, mfwd, "1")
 		tmplR = genSizedR(mfr, typeName, "1")
 	case "string":
 		tmplW = lf + " := " + cast + "(len(" + mfw + ")) ; " + genLenW(nfr) + " ; b·writeS(" + mfw + ")"
@@ -129,11 +132,8 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			for i := 0; i < numindir; i++ {
 				tmplR += "if p++; data[p-1] != 0 { "
 				if i == 0 {
-					println(mfw + "\n\t" + tn)
 					if tmplW += "if " + mfw + " == nil { b·writeB(0) } else { b·writeB(1) ; "; pv0 {
-						tmplW += "pv0" + id + " := *" + mfw + " ; "
-					} else {
-						tmplW += " /*pv0*/ "
+						tmplW += "pv0" + id + " := *" + mfw + " ; " // } else {tmplW += " /*pv0*/ "
 					}
 				} else {
 					tmplW += "if pv" + s(i-1) + id + " == nil { b·writeB(0) } else { b·writeB(1) ; pv" + s(i) + id + " := *pv" + s(i-1) + id + " ; "
@@ -256,14 +256,16 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			if fs := fixedSizeForTypeSpec(typeName); fs > 0 && !optNoFixedSizeCode {
 				ensureImportFor(typeName)
 				tmplR = mfr + "= *((*" + typeName + ")(unsafe.Pointer(&data[p]))) ; p += " + s(fs)
-				if mfw[0] == '*' {
-					mfw = mfw[1:]
-				} else if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")") {
-					mfw = mfw[:len(mfw)-1][2:]
+				if mfwd[0] == '*' {
+					mfwd = mfwd[1:]
+				} else if ustr.Pref(mfwd, "(*") && ustr.Suff(mfwd, ")") {
+					mfwd = mfwd[:len(mfwd)-1][2:]
+				} else if ustr.Pref(mfwd, "(*") && ustr.Suff(mfwd, ")[0]") {
+					mfwd = mfwd[:len(mfwd)-4][2:]
 				} else {
-					mfw = "&" + mfw
+					mfwd = "&" + mfwd
 				}
-				tmplW = "b·writeN((*[" + s(fs) + "]byte)(unsafe.Pointer(" + mfw + "))[:])"
+				tmplW = "b·writeN((*[" + s(fs) + "]byte)(unsafe.Pointer(" + mfwd + "))[:])"
 			} else if tsyn := typeSyns[typeName]; tsyn != "" {
 				tmplR, tmplW = genForFieldOrVarOfNamedTypeRW(fieldName, altNoMe, tds, tsyn, "", numIndir, iterDepth, taggedUnion)
 				tmplR = ustr.Replace(tmplR, "(*"+tsyn+")(unsafe.Pointer(", "(*"+typeName+")(unsafe.Pointer(")
