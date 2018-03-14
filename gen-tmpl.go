@@ -119,7 +119,7 @@ func (me *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
 
 type writeBuf struct{ b []byte }
 
-func writesBuffer(b []byte) *writeBuf {
+func writeBuffer(b []byte) *writeBuf {
 	return &writeBuf{b: b}
 }
 

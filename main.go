@@ -168,7 +168,7 @@ func main() {
 		tdot.BBuf.WriteTo = "buf.WriteTo"
 	} else {
 		tdot.BBuf.Bytes = "buf.b"
-		tdot.BBuf.Ctor = "writesBuffer"
+		tdot.BBuf.Ctor = "writeBuffer"
 		tdot.BBuf.Len = "len(buf.b)"
 		tdot.BBuf.Type = "*writeBuf"
 		tdot.BBuf.WriteB = "buf.writeByte"

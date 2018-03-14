@@ -6,7 +6,7 @@ import (
 
 type writeBuf struct{ b []byte }
 
-func writesBuffer(b []byte) *writeBuf {
+func writeBuffer(b []byte) *writeBuf {
 	return &writeBuf{b: b}
 }
 
