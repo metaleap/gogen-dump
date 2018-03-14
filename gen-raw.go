@@ -62,23 +62,25 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 		}
 	}
 	if numIndir > 0 {
-		mfr = "v" + s(numIndir) + s(iterDepth) + s(len(taggedUnion)) + ":"
-		mfw = "pv" + s(numIndir-1) + s(iterDepth) + s(len(taggedUnion)) //  "(" + ustr.Times("*", numIndir) + mfw + ")"
+		if mfr = "v" + s(numIndir) + s(iterDepth) + s(len(taggedUnion)) + ":"; tmpVarPref != "" {
+			mfw = tmpVarPref + s(numIndir-1) + s(iterDepth) + s(len(taggedUnion)) //  "(" + ustr.Times("*", numIndir) + mfw + ")"
+		}
 	} else if altNoMe == "" && tmpVarPref != "" {
 		mfr = tmpVarPref // + nfr
 	} else if numIndir == 0 && iterDepth > 0 && altNoMe == "" && (ustr.Pref(nf, "k") || ustr.Pref(nf, "m")) {
 		mfr = "b" + nf
 	}
+	mfwd := "(" + ustr.Times("*", numIndir) + mfw + ")"
 	var cast string
 	if optSafeVarints {
 		cast = "uint64"
 	}
 	switch typeName {
 	case "bool":
-		tmplW = "if " + mfw + " { b·writeB(1) } else { b·writeB(0) }"
+		tmplW = "if " + mfwd + " { b·writeB(1) } else { b·writeB(0) }"
 		tmplR = mfr + "= (data[p] == 1) ; p++ "
 	case "uint8", "byte":
-		tmplW = "b·writeB(" + mfw + ")"
+		tmplW = "b·writeB(" + mfwd + ")"
 		tmplR = mfr + "= data[p] ; p++ "
 	case "int8":
 		tmplW = genSizedW(nfr, mfw, "1")
@@ -92,22 +94,22 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			}
 		}
 	case "int16", "uint16":
-		tmplW = genSizedW(nfr, mfw, "2")
+		tmplW = genSizedW(nfr, mfwd, "2")
 		tmplR = genSizedR(mfr, typeName, "2")
 	case "rune", "int32", "float32", "uint32":
-		tmplW = genSizedW(nfr, mfw, "4")
+		tmplW = genSizedW(nfr, mfwd, "4")
 		tmplR = genSizedR(mfr, typeName, "4")
 	case "complex64", "float64", "uint64", "int64":
-		tmplW = genSizedW(nfr, mfw, "8")
+		tmplW = genSizedW(nfr, mfwd, "8")
 		tmplR = genSizedR(mfr, typeName, "8")
 	case "complex128":
-		tmplW = genSizedW(nfr, mfw, "16")
+		tmplW = genSizedW(nfr, mfwd, "16")
 		tmplR = genSizedR(mfr, typeName, "16")
 	case "uint", "uintptr":
-		tmplW = genSizedW(nfr, mfw, "uint64")
+		tmplW = genSizedW(nfr, mfwd, "uint64")
 		tmplR = genSizedR(mfr, typeName, "uint64")
 	case "int":
-		tmplW = genSizedW(nfr, mfw, "int64")
+		tmplW = genSizedW(nfr, mfwd, "int64")
 		tmplR = genSizedR(mfr, typeName, "int64")
 	default:
 		if typeName[0] == '*' {
@@ -115,8 +117,11 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 
 			numindir := len(typeName) - len(ustr.Skip(typeName, '*'))
 			tn, id := typeName[numindir:], s(iterDepth)+s(len(taggedUnion)) //+s(numindir)+s(numIndir)
-			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, "", numindir, iterDepth, taggedUnion)
-			// haspv0:=ustr.Pref(tn,"[]") ||tn=="bool"||tn=="byte"||tn=="uint8"
+			vpref, pv0 := "pv", ustr.Pref(tn, "[]") || ustr.Pref(tn, "map[") || tn == "string"
+			if !pv0 {
+				vpref = ""
+			}
+			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, vpref, numindir, iterDepth, taggedUnion)
 			tmplR = "{ "
 			for i := 0; i < numindir; i++ {
 				tmplR += " var p" + s(i) + id + " " + ustr.Times("*", numindir-i) + tn + " ; "
@@ -125,7 +130,11 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplR += "if p++; data[p-1] != 0 { "
 				if i == 0 {
 					println(mfw + "\n\t" + tn)
-					tmplW += "if " + mfw + " == nil { b·writeB(0) } else { b·writeB(1) ; pv0" + id + " := *" + mfw + " ; "
+					if tmplW += "if " + mfw + " == nil { b·writeB(0) } else { b·writeB(1) ; "; pv0 {
+						tmplW += "pv0" + id + " := *" + mfw + " ; "
+					} else {
+						tmplW += " /*pv0*/ "
+					}
 				} else {
 					tmplW += "if pv" + s(i-1) + id + " == nil { b·writeB(0) } else { b·writeB(1) ; pv" + s(i) + id + " := *pv" + s(i-1) + id + " ; "
 				}
@@ -182,7 +191,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplW += "\n\t\t" + tw
 				tmplW += "\n\t}"
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 && !optNoFixedSizeCode {
-				tmplW = genSizedW(nfr, mfw+"[0]", afs)
+				tmplW = genSizedW(nfr, mfwd+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
 				return
 			} else {
@@ -221,7 +230,7 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 			}
 
 			tmplR += "{ t" + " := data[p] ; p++ ; switch t" + " {"
-			tmplW += "{ switch t" + " := " + mfw + ".(type) {"
+			tmplW += "{ switch t" + " := " + mfwd + ".(type) {"
 			for ti, tu := range taggedUnion {
 				tr, _ := genForFieldOrVarOfNamedTypeRW(nf, "", tds, tu, "u", 0, iterDepth, nil)
 				tmplR += "\n\t\tcase " + s(ti+1) + ":\n\t\t\t" + "var u " + tu + " ; " + tr + " ; " + ustr.Drop(mfr, ':') + "= u"
@@ -309,6 +318,8 @@ func genSizedW(fieldName string, mfw string, byteSize string) string {
 	}
 	if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")") {
 		return "b·writeN(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[2:len(mfw)-1] + ")))[:])"
+	} else if ustr.Pref(mfw, "(*") && ustr.Suff(mfw, ")[0]") {
+		return "b·writeN(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[2:len(mfw)-4] + ")))[:])"
 	} else if mfw[0] == '*' {
 		return "b·writeN(((*[" + byteSize + "]byte)(unsafe.Pointer(" + mfw[1:] + ")))[:])"
 	}
