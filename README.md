@@ -24,11 +24,11 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 For each (selected) `struct` that has any serializable fields at all, the following methods are generated:
 
 ```go
-    // core serialization code, only pure raw data, no meta-headers
-    marshalTo(bytes.Buffer) (error)
+    // internal serialization code, only pure raw data, no meta-headers
+    marshalTo(bytes.Buffer, map[uintptr]uint64) (error)
 
-    // code to deserialize marshalTo's output, no sanity checks
-    unmarshalFrom(*int, []byte) (error)
+    // internal code to deserialize marshalTo's output, no sanity checks
+    unmarshalFrom(*int, []byte, map[uint64]uintptr) (error)
 
     // implements encoding.BinaryMarshaler using marshalTo
     MarshalBinary() ([]byte, error)
@@ -36,7 +36,7 @@ For each (selected) `struct` that has any serializable fields at all, the follow
     // implements encoding.BinaryUnmarshaler using unmarshalFrom
     UnmarshalBinary([]byte) error
 
-    // implements io.WriterTo, writes 16B header and then marshalTo's output
+    // implements io.WriterTo, writes 16B sig+len header and then marshalTo's output
     WriteTo(io.Writer) (int64, error)
 
     // implements io.ReaderFrom, verifies the 16B header, calls unmarshalFrom

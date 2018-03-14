@@ -39,14 +39,10 @@ import (
 {{end}}*/
 
 func (me *{{.TName}}) marshalTo(buf {{$bType}}, addrs map[uintptr]uint64) (err error) {
-	{{if .TmplW}}
+	{{if .TmplW}}{{.TmplW}}
+	{{else}}{{range .Fields}}{{if .TmplW}} // {{.FName}}{{.FExtNames}}
 	{{.TmplW}}
-	{{else}}
-	{{range .Fields}}
-	{{.TmplW}}
-	{{end}}
-	{{end}}
-	return
+	{{end}}{{end}}{{end}}return
 }
 
 // MarshalBinary` + " implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`)" + `.
@@ -61,14 +57,10 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 
 func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-	{{if .TmplR}}
+	{{if .TmplR}}{{.TmplR}}
+	{{else}}{{range .Fields}}{{if .TmplR}} // {{.FName}}{{.FExtNames}}
 	{{.TmplR}}
-	{{else}}
-	{{range .Fields}}
-	{{.TmplR}}
-	{{end}}
-	{{end}}
-	*pos = p
+	{{end}}{{end}}{{end}}*pos = p
 	return
 }
 
@@ -271,10 +263,11 @@ func (me *tmplDotStruct) sizeHeur(exprPref string) *sizeHeuristics {
 }
 
 type tmplDotField struct {
-	FName   string
-	TmplW   string
-	TmplR   string
-	Comment string
+	FName     string
+	TmplW     string
+	TmplR     string
+	Comment   string
+	FExtNames string
 
 	typeIdent         string
 	taggedUnion       sort.StringSlice

@@ -28,6 +28,9 @@ func genDump() error {
 				tdf := tdt.Fields[i]
 				oneop := tdf.fixedsizeExtNumSkip > 0
 				if oneop && !optNoFixedSizeCode {
+					for f := 1; f <= tdf.fixedsizeExtNumSkip; f++ {
+						tdf.FExtNames += ", " + tdt.Fields[i+f].FName
+					}
 					addr, fse := "&me."+tdf.FName, s(tdf.fixedsizeExt)
 					if i += tdf.fixedsizeExtNumSkip; tdf.typeIdent[0] == '[' {
 						addr += "[0]"

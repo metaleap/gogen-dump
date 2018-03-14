@@ -38,13 +38,13 @@ import (
 */
 
 func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// Name
 	{
 		lName := (len(me.Name))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
 		buf.WriteString(me.Name)
 	}
-
+	// ClosestTo
 	if me.ClosestTo == nil {
 		buf.WriteByte(0)
 	} else {
@@ -53,7 +53,7 @@ func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err erro
 			return
 		}
 	}
-
+	// Companies
 	{
 		lCompanies := (len(me.Companies))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lCompanies))[:])
@@ -63,7 +63,7 @@ func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err erro
 			}
 		}
 	}
-
+	// Families
 	if me.Families == nil {
 		buf.WriteByte(0)
 	} else {
@@ -79,7 +79,7 @@ func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err erro
 			}
 		}
 	}
-
+	// Schools
 	if me.Schools == nil {
 		buf.WriteByte(0)
 	} else {
@@ -100,7 +100,6 @@ func (me *city) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err erro
 			}
 		}
 	}
-
 	return
 }
 
@@ -116,14 +115,14 @@ func (me *city) MarshalBinary() (data []byte, err error) {
 
 func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// Name
 	{
 		lName := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
 		me.Name = string(data[p : p+lName])
 		p += lName
 	}
-
+	// ClosestTo
 	{
 		var p000 *city
 		if p++; data[p-1] != 0 {
@@ -135,7 +134,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (
 		}
 		me.ClosestTo = p000
 	}
-
+	// Companies
 	{
 		lCompanies := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -146,7 +145,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (
 			}
 		}
 	}
-
+	// Families
 	{
 		var p000 *[]family
 		if p++; data[p-1] != 0 {
@@ -163,7 +162,7 @@ func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (
 		}
 		me.Families = p000
 	}
-
+	// Schools
 	{
 		var p000 *[]*school
 		if p++; data[p-1] != 0 {
@@ -187,7 +186,6 @@ func (me *city) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (
 		}
 		me.Schools = p000
 	}
-
 	*pos = p
 	return
 }
@@ -249,7 +247,7 @@ func (me *city) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *company) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// Suppliers
 	{
 		lSuppliers := (len(me.Suppliers))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lSuppliers))[:])
@@ -264,7 +262,7 @@ func (me *company) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err e
 			}
 		}
 	}
-
+	// Clients
 	{
 		lClients := (len(me.Clients))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lClients))[:])
@@ -279,7 +277,7 @@ func (me *company) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err e
 			}
 		}
 	}
-
+	// Staff
 	{
 		lStaff := (len(me.Staff))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lStaff))[:])
@@ -294,7 +292,6 @@ func (me *company) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err e
 			}
 		}
 	}
-
 	return
 }
 
@@ -310,7 +307,7 @@ func (me *company) MarshalBinary() (data []byte, err error) {
 
 func (me *company) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// Suppliers
 	{
 		lSuppliers := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -329,7 +326,7 @@ func (me *company) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr
 			}
 		}
 	}
-
+	// Clients
 	{
 		lClients := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -348,7 +345,7 @@ func (me *company) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr
 			}
 		}
 	}
-
+	// Staff
 	{
 		lStaff := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -367,7 +364,6 @@ func (me *company) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr
 			}
 		}
 	}
-
 	*pos = p
 	return
 }
@@ -428,13 +424,13 @@ func (me *company) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *family) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// LastName
 	{
 		lLastName := (len(me.LastName))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lLastName))[:])
 		buf.WriteString(me.LastName)
 	}
-
+	// Pets
 	{
 		lPets := (len(me.Pets))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lPets))[:])
@@ -498,7 +494,6 @@ func (me *family) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			}
 		}
 	}
-
 	return
 }
 
@@ -514,14 +509,14 @@ func (me *family) MarshalBinary() (data []byte, err error) {
 
 func (me *family) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// LastName
 	{
 		lLastName := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
 		me.LastName = string(data[p : p+lLastName])
 		p += lLastName
 	}
-
+	// Pets
 	{
 		lPets := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -608,7 +603,6 @@ func (me *family) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			me.Pets[bk0] = bm0
 		}
 	}
-
 	*pos = p
 	return
 }
@@ -664,7 +658,7 @@ func (me *family) WriteTo(w io.Writer) (n int64, err error) {
    13 field(s), always 3384b
 
    The serialization view:
-   - eight1 - float64, 8b, begins fixed-size span of ~3380b (+padding/alignment..) that co-opts the next 12 field(s)
+   - eight1 - float64, 8b, begins fixed-size span of ~3380b (+padding/alignment..) over the next 12 field(s)
    - eight2 - [1]uint64, 8b
    - eight3 - [2][3]int64, 48b
    - eight4 - [4][5]complex64, 160b
@@ -680,9 +674,7 @@ func (me *family) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *fixedSize) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
 	buf.Write((*[3384]byte)(unsafe.Pointer(me))[:])
-
 	return
 }
 
@@ -698,10 +690,8 @@ func (me *fixedSize) MarshalBinary() (data []byte, err error) {
 
 func (me *fixedSize) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
 	*me = *((*fixedSize)(unsafe.Pointer(&data[p])))
 	p += 3384
-
 	*pos = p
 	return
 }
@@ -758,7 +748,7 @@ func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
 
    The serialization view:
    - Name - string
-   - PopularityScore - float64, 8b, begins fixed-size span of ~46b (+padding/alignment..) that co-opts the next 5 field(s)
+   - PopularityScore - float64, 8b, begins fixed-size span of ~46b (+padding/alignment..) over the next 5 field(s)
    - AvgPerDay.TimeNeededMinMax - [2]time.Duration, 16b
    - AvgPerDay.JustNeedToCheckPaddingAndAlignmentsHere - bool, 1b
    - AvgPerDay.CostInCentsMinMax - [2]uint16, 4b
@@ -768,15 +758,15 @@ func (me *fixedSize) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *hobby) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// Name
 	{
 		lName := (len(me.Name))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lName))[:])
 		buf.WriteString(me.Name)
 	}
-
+	// PopularityScore, AvgPerDay.TimeNeededMinMax, AvgPerDay.JustNeedToCheckPaddingAndAlignmentsHere, AvgPerDay.CostInCentsMinMax, GroupSizeMinMax, Outdoorsy
 	buf.Write((*[46]byte)(unsafe.Pointer(&me.PopularityScore))[:])
-
+	// Description
 	if me.Description == nil {
 		buf.WriteByte(0)
 	} else {
@@ -788,7 +778,6 @@ func (me *hobby) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err err
 			buf.WriteString(pv000)
 		}
 	}
-
 	return
 }
 
@@ -804,17 +793,17 @@ func (me *hobby) MarshalBinary() (data []byte, err error) {
 
 func (me *hobby) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// Name
 	{
 		lName := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
 		me.Name = string(data[p : p+lName])
 		p += lName
 	}
-
+	// PopularityScore, AvgPerDay.TimeNeededMinMax, AvgPerDay.JustNeedToCheckPaddingAndAlignmentsHere, AvgPerDay.CostInCentsMinMax, GroupSizeMinMax, Outdoorsy
 	*((*[46]byte)(unsafe.Pointer(&me.PopularityScore))) = *((*[46]byte)(unsafe.Pointer(&data[p])))
 	p += 46
-
+	// Description
 	{
 		var p000 *string
 		if p++; data[p-1] != 0 {
@@ -826,7 +815,6 @@ func (me *hobby) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) 
 		}
 		me.Description = p000
 	}
-
 	*pos = p
 	return
 }
@@ -891,13 +879,13 @@ func (me *hobby) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// FirstName
 	{
 		lFirstName := (len(me.FirstName))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lFirstName))[:])
 		buf.WriteString(me.FirstName)
 	}
-
+	// Family
 	if me.Family == nil {
 		buf.WriteByte(0)
 	} else {
@@ -906,7 +894,7 @@ func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			return
 		}
 	}
-
+	// DateOfBirth
 	{
 		d, e := me.DateOfBirth.MarshalBinary()
 		if err = e; err != nil {
@@ -916,7 +904,7 @@ func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 		buf.Write((*[8]byte)(unsafe.Pointer(&lDateOfBirth))[:])
 		buf.Write(d)
 	}
-
+	// Parents
 	for i0 := 0; i0 < 2; i0++ {
 		if me.Parents[i0] == nil {
 			buf.WriteByte(0)
@@ -927,7 +915,7 @@ func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			}
 		}
 	}
-
+	// FavPet
 	{
 		switch t := me.FavPet.(type) {
 		case *petCat:
@@ -977,13 +965,12 @@ func (me *person) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			// panic(fmt.Sprintf("%T", t)) // don't want fmt in by default, but it's here to uncomment when the temporary need arises
 		}
 	}
-
+	// Top5Hobbies
 	for i0 := 0; i0 < 5; i0++ {
 		if err = me.Top5Hobbies[i0].marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
-
 	return
 }
 
@@ -999,14 +986,14 @@ func (me *person) MarshalBinary() (data []byte, err error) {
 
 func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// FirstName
 	{
 		lFirstName := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
 		me.FirstName = string(data[p : p+lFirstName])
 		p += lFirstName
 	}
-
+	// Family
 	{
 		var p000 *family
 		if p++; data[p-1] != 0 {
@@ -1018,7 +1005,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 		}
 		me.Family = p000
 	}
-
+	// DateOfBirth
 	{
 		lDateOfBirth := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -1029,7 +1016,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			p += lDateOfBirth
 		}
 	}
-
+	// Parents
 	for i0 := 0; i0 < 2; i0++ {
 		{
 			var p010 *person
@@ -1043,7 +1030,7 @@ func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			me.Parents[i0] = p010
 		}
 	}
-
+	// FavPet
 	{
 		t := data[p]
 		p++
@@ -1108,13 +1095,12 @@ func (me *person) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			me.FavPet = nil
 		}
 	}
-
+	// Top5Hobbies
 	for i0 := 0; i0 < 5; i0++ {
 		if err = me.Top5Hobbies[i0].unmarshalFrom(&p, data, addrs); err != nil {
 			return
 		}
 	}
-
 	*pos = p
 	return
 }
@@ -1170,7 +1156,7 @@ func (me *person) WriteTo(w io.Writer) (n int64, err error) {
    6 field(s)
 
    The serialization view:
-   - DailyFoodBill - float32, 4b, begins fixed-size span of ~20b (+padding/alignment..) that co-opts the next 2 field(s)
+   - DailyFoodBill - float32, 4b, begins fixed-size span of ~20b (+padding/alignment..) over the next 2 field(s)
    - AgeWhenAdopted - int64, 8b
    - LastIllness.Days - int64, 8b
    - LastIllness.Date - *time.Time
@@ -1179,9 +1165,9 @@ func (me *person) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *pet) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// DailyFoodBill, AgeWhenAdopted, LastIllness.Days
 	buf.Write((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))[:])
-
+	// LastIllness.Date
 	if me.LastIllness.Date == nil {
 		buf.WriteByte(0)
 	} else {
@@ -1196,7 +1182,7 @@ func (me *pet) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error
 			buf.Write(d)
 		}
 	}
-
+	// LastIllness.Notes
 	{
 		lLastIllnessNotes := (len(me.LastIllness.Notes))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lLastIllnessNotes))[:])
@@ -1206,14 +1192,13 @@ func (me *pet) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error
 			buf.WriteString(me.LastIllness.Notes[i0])
 		}
 	}
-
+	// OrigCostIfKnown
 	if me.OrigCostIfKnown == nil {
 		buf.WriteByte(0)
 	} else {
 		buf.WriteByte(1)
 		buf.Write(((*[16]byte)(unsafe.Pointer(me.OrigCostIfKnown)))[:])
 	}
-
 	return
 }
 
@@ -1229,10 +1214,10 @@ func (me *pet) MarshalBinary() (data []byte, err error) {
 
 func (me *pet) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// DailyFoodBill, AgeWhenAdopted, LastIllness.Days
 	*((*[20]byte)(unsafe.Pointer(&me.DailyFoodBill))) = *((*[20]byte)(unsafe.Pointer(&data[p])))
 	p += 20
-
+	// LastIllness.Date
 	{
 		var p000 *time.Time
 		if p++; data[p-1] != 0 {
@@ -1251,7 +1236,7 @@ func (me *pet) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (e
 		}
 		me.LastIllness.Date = p000
 	}
-
+	// LastIllness.Notes
 	{
 		lLastIllnessNotes := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -1263,7 +1248,7 @@ func (me *pet) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (e
 			p += li0
 		}
 	}
-
+	// OrigCostIfKnown
 	{
 		var p000 *complex128
 		if p++; data[p-1] != 0 {
@@ -1273,7 +1258,6 @@ func (me *pet) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (e
 		}
 		me.OrigCostIfKnown = p000
 	}
-
 	*pos = p
 	return
 }
@@ -1334,18 +1318,17 @@ func (me *pet) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *petCat) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// pet
 	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
-
+	// RabbitsSlaynPerDayOnAvg
 	if me.RabbitsSlaynPerDayOnAvg == nil {
 		buf.WriteByte(0)
 	} else {
 		buf.WriteByte(1)
 		buf.WriteByte((*me.RabbitsSlaynPerDayOnAvg))
 	}
-
 	return
 }
 
@@ -1361,11 +1344,11 @@ func (me *petCat) MarshalBinary() (data []byte, err error) {
 
 func (me *petCat) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// pet
 	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
-
+	// RabbitsSlaynPerDayOnAvg
 	{
 		var p000 *uint8
 		if p++; data[p-1] != 0 {
@@ -1375,7 +1358,6 @@ func (me *petCat) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 		}
 		me.RabbitsSlaynPerDayOnAvg = p000
 	}
-
 	*pos = p
 	return
 }
@@ -1436,11 +1418,11 @@ func (me *petCat) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *petDog) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// pet
 	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
-
+	// WalkLog
 	if me.WalkLog == nil {
 		buf.WriteByte(0)
 	} else {
@@ -1468,7 +1450,6 @@ func (me *petDog) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			}
 		}
 	}
-
 	return
 }
 
@@ -1484,11 +1465,11 @@ func (me *petDog) MarshalBinary() (data []byte, err error) {
 
 func (me *petDog) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// pet
 	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
-
+	// WalkLog
 	{
 		var p000 *map[*time.Time][7]time.Duration
 		if p++; data[p-1] != 0 {
@@ -1524,7 +1505,6 @@ func (me *petDog) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 		}
 		me.WalkLog = p000
 	}
-
 	*pos = p
 	return
 }
@@ -1584,11 +1564,10 @@ func (me *petDog) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *petHamster) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// pet
 	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
-
 	return
 }
 
@@ -1604,11 +1583,10 @@ func (me *petHamster) MarshalBinary() (data []byte, err error) {
 
 func (me *petHamster) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// pet
 	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
-
 	*pos = p
 	return
 }
@@ -1669,11 +1647,11 @@ func (me *petHamster) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *petPiranha) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// pet
 	if err = me.pet.marshalTo(buf, addrs); err != nil {
 		return
 	}
-
+	// Weird
 	{
 		lWeird := (len(me.Weird))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lWeird))[:])
@@ -1695,7 +1673,6 @@ func (me *petPiranha) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (er
 			}
 		}
 	}
-
 	return
 }
 
@@ -1711,11 +1688,11 @@ func (me *petPiranha) MarshalBinary() (data []byte, err error) {
 
 func (me *petPiranha) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// pet
 	if err = me.pet.unmarshalFrom(&p, data, addrs); err != nil {
 		return
 	}
-
+	// Weird
 	{
 		lWeird := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -1748,7 +1725,6 @@ func (me *petPiranha) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uint
 			me.Weird[bk0] = bm0
 		}
 	}
-
 	*pos = p
 	return
 }
@@ -1809,7 +1785,7 @@ func (me *petPiranha) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *school) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// Teachers
 	{
 		lTeachers := (len(me.Teachers))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lTeachers))[:])
@@ -1824,7 +1800,7 @@ func (me *school) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			}
 		}
 	}
-
+	// Pupils
 	{
 		lPupils := (len(me.Pupils))
 		buf.Write((*[8]byte)(unsafe.Pointer(&lPupils))[:])
@@ -1839,7 +1815,6 @@ func (me *school) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err er
 			}
 		}
 	}
-
 	return
 }
 
@@ -1855,7 +1830,7 @@ func (me *school) MarshalBinary() (data []byte, err error) {
 
 func (me *school) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// Teachers
 	{
 		lTeachers := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -1874,7 +1849,7 @@ func (me *school) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			}
 		}
 	}
-
+	// Pupils
 	{
 		lPupils := (*((*int)(unsafe.Pointer(&data[p]))))
 		p += 8
@@ -1893,7 +1868,6 @@ func (me *school) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr)
 			}
 		}
 	}
-
 	*pos = p
 	return
 }
@@ -1953,13 +1927,12 @@ func (me *school) WriteTo(w io.Writer) (n int64, err error) {
 */
 
 func (me *simWorld) marshalTo(buf *bytes.Buffer, addrs map[uintptr]uint64) (err error) {
-
+	// Cities
 	for i0 := 0; i0 < 123; i0++ {
 		if err = me.Cities[i0].marshalTo(buf, addrs); err != nil {
 			return
 		}
 	}
-
 	return
 }
 
@@ -1975,13 +1948,12 @@ func (me *simWorld) MarshalBinary() (data []byte, err error) {
 
 func (me *simWorld) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
 	p := *pos
-
+	// Cities
 	for i0 := 0; i0 < 123; i0++ {
 		if err = me.Cities[i0].unmarshalFrom(&p, data, addrs); err != nil {
 			return
 		}
 	}
-
 	*pos = p
 	return
 }

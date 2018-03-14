@@ -78,7 +78,7 @@ func collectTypes() {
 				tdf.Comment += ", " + sizeStr(fs)
 			}
 			if tdf.fixedsizeExtNumSkip > 0 {
-				tdf.Comment += ", begins fixed-size span of ~" + sizeStr(tdf.fixedsizeExt) + " (+padding/alignment..) that co-opts the next " + s(tdf.fixedsizeExtNumSkip) + " field(s)"
+				tdf.Comment += ", begins fixed-size span of ~" + sizeStr(tdf.fixedsizeExt) + " (+padding/alignment..) over the next " + s(tdf.fixedsizeExtNumSkip) + " field(s)"
 			}
 			add4hash(s(tdf.fixedsizeExtNumSkip) + s(tdf.fixedsizeExt))
 		}
