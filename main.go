@@ -40,6 +40,8 @@ var (
 
 	optStdlibBytesBuffer = false // set to true by presence of command-line arg -stdlibBytesBuffer
 
+	optSharedRefs = false // set to true by presence of command-line arg -sharedRefs
+
 	optHeuristicLenStrings = 7
 
 	optHeuriticLenSlices = 2
@@ -62,27 +64,26 @@ func main() {
 			}
 
 			// any flags?
+			opts := map[string]*bool{
+				"safeVarints":            &optSafeVarints,
+				"varintsNotFixedSize":    &optSafeVarints,
+				"ignoreUnknownTypeCases": &optIgnoreUnknownTypeCases,
+				"noFixedSizeCode":        &optNoFixedSizeCode,
+				"stdlibBytesBuffer":      &optStdlibBytesBuffer,
+				"sharedRefs":             &optSharedRefs,
+			}
 			for i, ditch := 0, false; i < len(typeNames); i++ {
-				if tn := typeNames[i]; tn[0] == '-' && len(tn) > 1 {
-					switch tn {
-					case "-safeVarints", "--safeVarints":
-						optSafeVarints, ditch = true, true
-					case "-varintsNotFixedSize", "--varintsNotFixedSize":
-						optVarintsNotFixedSize, ditch = true, true
-					case "-ignoreUnknownTypeCases", "--ignoreUnknownTypeCases":
-						optIgnoreUnknownTypeCases, ditch = true, true
-					case "-noFixedSizeCode", "--noFixedSizeCode":
-						optNoFixedSizeCode, ditch = true, true
-					case "-stdlibBytesBuffer", "--stdlibBytesBuffer":
-						optStdlibBytesBuffer, ditch = true, true
-					default:
-						if tsyn, tref := ustr.BreakOnFirstOrPref(ustr.Skip(tn, '-'), "="); tsyn != "" && tref != "" {
-							ditch, typeSyns[tsyn] = true, tref
-						}
+				if tn := ustr.Skip(typeNames[i], '-'); tn != typeNames[i] { // starts with - or --
+					if opt, ok := opts["-"+tn]; ok {
+						ditch, *opt = true, true
+					} else if opt, ok = opts["--"+tn]; ok {
+						ditch, *opt = true, true
+					} else if tsyn, tref := ustr.BreakOnFirstOrPref(tn, "="); tsyn != "" && tref != "" {
+						ditch, typeSyns[tsyn] = true, tref
 					}
-				}
-				if ditch {
-					ditch, typeNames = false, append(typeNames[:i], typeNames[i+1:]...)
+					if ditch {
+						ditch, typeNames = false, append(typeNames[:i], typeNames[i+1:]...)
+					}
 				}
 			}
 		}

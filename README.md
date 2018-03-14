@@ -21,7 +21,7 @@ generates: `my/go/pkg/path/@serializers.gen.go`.
 - Optionally, all the following args each name a struct type-def to be processed (recommended) — if none, *all* declared in your package will be processed (undesirable)
 - (Some more exotic flags to be appended last are also offered, see bottom of this doc)
 
-For each (specified) `struct` that has any serializable fields at all, the following methods are generated:
+For each (selected) `struct` that has any serializable fields at all, the following methods are generated:
 
 ```go
     // core serialization code, only pure raw data, no meta-headers
