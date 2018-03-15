@@ -3,6 +3,7 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 	"sort"
 	"strconv"
 	"unsafe"
@@ -56,6 +57,22 @@ func collectTypes() {
 				}
 				if fsstart >= 0 && numskip > 0 {
 					tds.Fields[fsstart].fixedsizeExt, tds.Fields[fsstart].fixedsizeExtNumSkip = fsaccum, numskip
+					println(tds.TName + "." + tds.Fields[fsstart].FName + " — " + s(numskip))
+					var firstlast [2]*types.Var
+					tstruc := typeObjs[tds.TName].Underlying().(*types.Struct)
+					for fi := 0; fi < tstruc.NumFields(); fi++ {
+						if fld := tstruc.Field(fi); fld.Name() == tds.Fields[fsstart].FName {
+							println("YAY1:" + fld.Name())
+							firstlast[0] = fld
+						} else if fld.Name() == tds.Fields[fsstart+numskip].FName {
+							println("YAY2:" + fld.Name())
+							firstlast[1] = fld
+						}
+					}
+					if firstlast[0] != nil && firstlast[1] != nil {
+						offsets := typeSizes.Offsetsof(firstlast[:])
+						println(len(offsets))
+					}
 				}
 				fsstart, fsaccum = -1, 0
 			}
