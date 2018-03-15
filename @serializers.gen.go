@@ -689,10 +689,8 @@ func (me *fixedSize) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *fixedSize) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
-	p := *pos
-	*me = *((*fixedSize)(unsafe.Pointer(&data[p])))
-	p += 3384
-	*pos = p
+	*me = *((*fixedSize)(unsafe.Pointer(&data[*pos])))
+	*pos += 3384
 	return
 }
 

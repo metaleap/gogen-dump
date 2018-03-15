@@ -56,11 +56,10 @@ func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
 }
 
 func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
-	p := *pos
-	{{if .TmplR}}{{.TmplR}}
-	{{else}}{{range .Fields}}{{if .TmplR}} // {{.FName}}{{.FExtNames}}
+	{{if .TmplR}}{{.TmplR}}{{else}}p := *pos
+	{{range .Fields}}{{if .TmplR}} // {{.FName}}{{.FExtNames}}
 	{{.TmplR}}
-	{{end}}{{end}}{{end}}*pos = p
+	{{end}}{{end}}*pos = p{{end}}
 	return
 }
 

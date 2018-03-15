@@ -21,7 +21,7 @@ func genDump() error {
 	for _, tdt := range tdot.Structs {
 		if fs := tdt.fixedSize(); fs > 0 && !optNoFixedSizeCode {
 			ensureImportFor(tdt.TName)
-			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[p]))) ; p += " + s(fs)
+			tdt.TmplR = "*me = *((*" + tdt.TName + ")(unsafe.Pointer(&data[*pos]))) ; *pos += " + s(fs)
 			tdt.TmplW = "b·writeN((*[" + s(fs) + "]byte)(unsafe.Pointer(me))[:])"
 		} else {
 			for i := 0; i < len(tdt.Fields); i++ {
