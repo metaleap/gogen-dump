@@ -38,7 +38,7 @@ import (
 {{range .Fields}}   - {{.FName}} - {{.Comment}}
 {{end}}*/
 
-func (me *{{.TName}}) marshalTo(buf {{$bType}}, addrs map[uintptr]uint64) (err error) {
+func (me *{{.TName}}) marshalTo(buf {{$bType}}/*, addrs map[uintptr]uint64*/) (err error) {
 	{{if .TmplW}}{{.TmplW}}
 	{{else}}{{range .Fields}}{{if .TmplW}} // {{.FName}}{{.FExtNames}}
 	{{.TmplW}}
@@ -47,15 +47,15 @@ func (me *{{.TName}}) marshalTo(buf {{$bType}}, addrs map[uintptr]uint64) (err e
 
 // MarshalBinary` + " implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`)" + `.
 func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
-	var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
+	// var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
 	buf := {{$bCtor}}(make([]byte, 0, {{.InitialBufSize}}))
-	if err = me.marshalTo(buf, addrs); err == nil {
+	if err = me.marshalTo(buf/*, addrs*/); err == nil {
 		data = {{$bBytes}}
 	}
 	return
 }
 
-func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uintptr) (err error) {
+func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte/*, addrs map[uint64]uintptr*/) (err error) {
 	{{if .TmplR}}{{.TmplR}}{{else}}p := *pos
 	{{range .Fields}}{{if .TmplR}} // {{.FName}}{{.FExtNames}}
 	{{.TmplR}}
@@ -65,16 +65,16 @@ func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte, addrs map[uint64]uint
 
 // UnmarshalBinary` + " implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`" + `.
 func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
-	var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
+	// var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data, addrs)
+	err = me.unmarshalFrom(&pos0, data/*, addrs*/)
 	return
 }
 
 // ReadFrom` + " implements `io.ReaderFrom` by deserializing from `r` into `me`" + `.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from ` + "`WriteTo`" + `, any remainder remains unread.
 func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
-	var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
+	// var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
 	if err == nil {
@@ -84,7 +84,7 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data, addrs)
+				err = me.unmarshalFrom(&pos0, data/*, addrs*/)
 			}
 			n += 16
 		}
@@ -95,9 +95,9 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 // WriteTo` + " implements `io.WriterTo` by serializing `me` to `w`" + `.
 // ` + "`WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively." + `
 func (me *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
-	var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
+	// var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
 	buf := {{$bCtor}}(make([]byte, 0, {{.InitialBufSize}}))
-	if err = me.marshalTo(buf, addrs); err == nil {
+	if err = me.marshalTo(buf/*, addrs*/); err == nil {
 		header := [2]uint64 { {{.StructuralHash}}, uint64({{$bLen}}) }
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {

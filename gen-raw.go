@@ -17,6 +17,7 @@ func genDump() error {
 		"b·writeN", tdot.BBuf.WriteN,
 		"b·writeB", tdot.BBuf.WriteB,
 		"b·writeS", tdot.BBuf.WriteS,
+		"b·len()", tdot.BBuf.Len,
 	)
 	for _, tdt := range tdot.Structs {
 		if fs := tdt.fixedSize(); fs > 0 && !optNoFixedSizeCode {
@@ -299,8 +300,8 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 						if ustr.Pref(mfw, "(") && ustr.Suff(mfw, ")") && mfw[1] == '*' {
 							mfw = ustr.Skip(mfw[1:len(mfw)-1], '*')
 						}
-						tmplR = "if err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(&p, data, addrs); err != nil { return } ; "
-						tmplW = "if err = " + mfw + ".marshalTo(buf, addrs); err != nil { return } ; "
+						tmplR = "if err = " + ustr.Drop(mfr, ':') + ".unmarshalFrom(&p, data/*, addrs*/); err != nil { return } ; "
+						tmplW = "if err = " + mfw + ".marshalTo(buf/*, addrs*/); err != nil { return } ; "
 						break
 					}
 				}
