@@ -53,7 +53,7 @@ For each (selected) `struct` that has any serializable fields at all, the follow
 
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:
 
-- inherently not as massively scalable as the *"generated accessor-methods over underlying Message byte-arrays"* approach taken by eg. CapnProto, FlatBuffers and their ilk (but better developer ergonomics working with their native-Go structs first-class as you're used to)
+- inherently not as massively scalable as the *"schema-generated struct-lookalike accessor-methods over underlying incoming/outgoing byte-streams"* approach taken by eg. CapnProto, FlatBuffers and their ilk — but OTOH we get better developer ergonomics working with our native-Go structs first-class as we're used to, transforming / mangling / accumulating / allocating / destroying / (de)referencing them freely as-usual and in-memory in the (potentially) long time between de/serializations.
 - varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width (except in fixed-size fields/structures (unless `--varintsNotFixedSize` on), described further below)
 - caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no "address registry" for storage and restoral of sharing is kept
 - caution: generated code uses `unsafe.Pointer` everywhere extensively and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`

@@ -198,8 +198,16 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 				tmplW += "\n\t\t" + tw
 				tmplW += "\n\t}"
 			} else if afs := s(arrfixedsize); arrfixedsize > 0 && !optNoFixedSizeCode {
-				tmplW = genSizedW(nfr, mfwd+"[0]", afs)
 				tmplR = genSizedR(mfr, typeName, afs)
+				tmplW = genSizedW(nfr, mfwd+"[0]", afs)
+				if valtypespec == "byte" || valtypespec == "uint8" {
+					if ustr.Pref(mfwd, "(*") && ustr.Suff(mfwd, ")") {
+						mfwd = mfwd[:len(mfwd)-1][1:]
+					}
+					if mfwd[0] == '*' {
+						tmplW = "b·writeN(" + ustr.Skip(mfwd, '*') + "[:])"
+					}
+				}
 				return
 			} else {
 				offr, offw := len(tmplR), len(tmplW)

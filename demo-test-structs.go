@@ -77,7 +77,7 @@ func (me *pet) mammal() bool    { return true }
 
 type petPiranha struct {
 	pet
-	Weird map[*[2048]byte][]fixedSize
+	Weird map[****[1234]byte][]fixedSize
 }
 
 func (me *petPiranha) mammal() bool { return false }
