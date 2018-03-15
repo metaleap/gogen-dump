@@ -4,6 +4,7 @@ import (
 	"io"
 )
 
+// DO keep manually in sync with the copy in `gen-tmpl.go`'s `const tmplSrc`!
 type writeBuf struct{ b []byte }
 
 func writeBuffer(b []byte) *writeBuf {
@@ -18,7 +19,7 @@ func (me *writeBuf) writeByte(b byte) {
 	l, c := len(me.b), cap(me.b)
 	if l == c {
 		old := me.b
-		me.b = make([]byte, l+1, l+l+128)
+		me.b = make([]byte, l+1, l+l+128) // the constant extra padding: if we're tiny (~0), it helps much; if we're large (MBs), it hurts none
 		copy(me.b[:l], old)
 	} else {
 		me.b = me.b[:l+1]

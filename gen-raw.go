@@ -123,24 +123,35 @@ func genForFieldOrVarOfNamedTypeRW(fieldName string, altNoMe string, tds *tmplDo
 
 			numindir := len(typeName) - len(ustr.Skip(typeName, '*'))
 			tn, id := typeName[numindir:], s(iterDepth)+s(len(taggedUnion)) //+s(numindir)+s(numIndir)
-			vpref, pv0 := "pv", ustr.Pref(tn, "[]") || ustr.Pref(tn, "map[") || tn == "string"
-			if !pv0 {
+			vpref, deref := "pv", ustr.Pref(tn, "[]") || ustr.Pref(tn, "map[") || tn == "string"
+			tmplR = "{ var p0" + id + " " + ustr.Times("*", numindir) + tn + " ;"
+			// for i := 0; i < numindir; i++ {
+			// 	tmplR += " var p" + s(i) + id + " " + ustr.Times("*", numindir-i) + tn + " ; "
+			// }
+			for i := 0; i < numindir; i++ {
+				if tmplR += "if p++; data[p-1] != 0 {"; i < (numindir - 1) {
+					tmplR += "var p" + s(i+1) + id + " " + ustr.Times("*", numindir-i-1) + tn + " ; "
+				}
+				if islast := i == (numindir - 1); i == 0 {
+					if tmplW += "if " + mfw + " == nil { b·writeB(0) } else { b·writeB(1) ; "; deref || !islast {
+						tmplW += "pv0" + id + " := *" + mfw + " ; "
+						// } else if islast && numindir > 1 {
+						// 	tmplW += "pv0" + id + " := " + mfw + " ; "
+					}
+				} else {
+					if tmplW += "if pv" + s(i-1) + id + " == nil { b·writeB(0) } else { b·writeB(1) ; "; deref || !islast {
+						tmplW += "pv" + s(i) + id + " := *pv" + s(i-1) + id + " ; "
+						// } else if islast && numindir > 1 {
+						// 	tmplW += "pv" + s(i) + id + " := pv" + s(i-1) + id + " ; "
+					}
+				}
+			}
+			if numindir == 1 && !deref {
 				vpref = ""
 			}
 			tr, tw := genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, vpref, numindir, iterDepth, taggedUnion)
-			tmplR = "{ "
-			for i := 0; i < numindir; i++ {
-				tmplR += " var p" + s(i) + id + " " + ustr.Times("*", numindir-i) + tn + " ; "
-			}
-			for i := 0; i < numindir; i++ {
-				tmplR += "if p++; data[p-1] != 0 { "
-				if i == 0 {
-					if tmplW += "if " + mfw + " == nil { b·writeB(0) } else { b·writeB(1) ; "; pv0 {
-						tmplW += "pv0" + id + " := *" + mfw + " ; " // } else {tmplW += " /*pv0*/ "
-					}
-				} else {
-					tmplW += "if pv" + s(i-1) + id + " == nil { b·writeB(0) } else { b·writeB(1) ; pv" + s(i) + id + " := *pv" + s(i-1) + id + " ; "
-				}
+			if numindir > 1 && !deref {
+				_, tw = genForFieldOrVarOfNamedTypeRW(nf, altNoMe, tds, tn, vpref, numindir-1, iterDepth, taggedUnion)
 			}
 			tmplR += "\n\t\t" + tr + " ; "
 			for i := numindir - 1; i >= 0; i-- {

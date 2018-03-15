@@ -40,7 +40,7 @@ var (
 
 	optStdlibBytesBuffer = false // set to true by presence of command-line arg -stdlibBytesBuffer
 
-	optSharedRefs = false // set to true by presence of command-line arg -sharedRefs
+	optSharedRefs = true // set to true by presence of command-line arg -sharedRefs
 
 	optHeuristicLenStrings = 7
 

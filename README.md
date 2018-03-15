@@ -45,6 +45,7 @@ For each (selected) `struct` that has any serializable fields at all, the follow
 
 ## Satisfies my own following fuzzy in-flux spec that I found underserved by the ecosystem at time of writing:
 
+
 - no separate schema language / definition files: `struct` type-defs parsed from input `.go` source files serve as "schema" (so `gogen-dump` only generates methods, not types)
 - thanks to the above, no use of `reflect`-based introspection, so private fields too can be (de)serialized
 - unlike `gob` and most other (de)serialization schemes, does not laboriously encode and decode field or type names/tags/IDs (except as desired for specially-tagged interface-typed fields, detailed below) but rather purely follows (generation-time) type *structure*: the code is the schema, the byte stream is pure raw data — not always what you want, but quite often what I require
@@ -52,6 +53,7 @@ For each (selected) `struct` that has any serializable fields at all, the follow
 
 ### Compromises that make `gogen-dump` less-viable for *some* use-cases but still perfectly suitable for *others*:
 
+- inherently not as massively scalable as the *"generated accessor-methods over underlying Message byte-arrays"* approach taken by eg. CapnProto, FlatBuffers and their ilk (but better developer ergonomics working with their native-Go structs first-class as you're used to)
 - varints (`int`, `uint`, `uintptr`) always occupy 8 bytes regardless of native machine-word width (except in fixed-size fields/structures (unless `--varintsNotFixedSize` on), described further below)
 - caution: no support for / preservation of shared-references! pointees are currently (de)serialized in-place, no "address registry" for storage and restoral of sharing is kept
 - caution: generated code uses `unsafe.Pointer` everywhere extensively and thus assumes same endianness during serialization and deserialization — doesn't use `encoding/binary` or `reflect`

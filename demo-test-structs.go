@@ -11,10 +11,10 @@ type simWorld struct {
 
 type city struct {
 	Name      string
-	ClosestTo *city
+	ClosestTo *****city
 	Companies []company
-	Families  *[]family
-	Schools   *[]*school
+	Families  **[]family
+	Schools   **[]**school
 }
 
 type company struct {
