@@ -14,10 +14,10 @@ or better yet
 
     gogen-dump my/go/pkg/path myStruct OtherStruct
 
-generates: `my/go/pkg/path/@serializers.gen.go`.
+generates: `my/go/pkg/path/zerealizers.gen.go`.
 
 - **Package path** can be file-system (dir or file) path (rel/abs) or Go import path
-- *If* the very next arg is some `my-output-file-name.go`, then that one will be written instead of the default `@serializers.gen.go`.
+- *If* the very next arg is some `my-output-file-name.go`, then that one will be written instead of the default `zerealizers.gen.go`.
 - Optionally, all the following args each name a struct type-def to be processed (recommended) — if none, *all* declared in your package will be processed (undesirable)
 - (Some more exotic flags to be appended last are also offered, see bottom of this doc)
 

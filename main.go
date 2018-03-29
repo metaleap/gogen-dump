@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	genFileName = "@serializers.gen.go" // this mutable will first be set to cmdline-arg-specified alt .go file-name (if given), then only later expanded to full absolute output file path
+	genFileName = "zerealizers.gen.go" // this mutable will first be set to cmdline-arg-specified alt .go file-name (if given), then only later expanded to full absolute output file path
 	tdot        = tmplDotFile{ProgHint: "github.com/metaleap/gogen-dump", Imps: map[string]*tmplDotPkgImp{}}
 	typeNames   = []string{"simWorld", "city", "company", "school", "family", "person", "hobby", "pet", "petPiranha", "petCat", "petDog", "petHamster", "fixedSize"}
 	typeDefs    = map[*ast.TypeSpec]*ast.StructType{}
