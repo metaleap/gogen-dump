@@ -11,47 +11,47 @@ func writeBuffer(b []byte) *writeBuf {
 	return &writeBuf{b: b}
 }
 
-func (me *writeBuf) copyTo(to *writeBuf) {
-	to.write(me.b)
+func (this *writeBuf) copyTo(to *writeBuf) {
+	to.write(this.b)
 }
 
-func (me *writeBuf) writeByte(b byte) {
-	l, c := len(me.b), cap(me.b)
+func (this *writeBuf) writeByte(b byte) {
+	l, c := len(this.b), cap(this.b)
 	if l == c {
-		old := me.b
-		me.b = make([]byte, l+1, l+l+128) // the constant extra padding: if we're tiny (~0), it helps much; if we're large (MBs), it hurts none
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, l+1, l+l+128) // the constant extra padding: if we're tiny (~0), it helps much; if we're large (MBs), it hurts none
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:l+1]
+		this.b = this.b[:l+1]
 	}
-	me.b[l] = b
+	this.b[l] = b
 }
 
-func (me *writeBuf) write(b []byte) {
-	l, c, n := len(me.b), cap(me.b), len(b)
+func (this *writeBuf) write(b []byte) {
+	l, c, n := len(this.b), cap(this.b), len(b)
 	if ln := l + n; ln > c {
-		old := me.b
-		me.b = make([]byte, ln, ln+ln+128)
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, ln, ln+ln+128)
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:ln]
+		this.b = this.b[:ln]
 	}
-	copy(me.b[l:], b)
+	copy(this.b[l:], b)
 }
 
-func (me *writeBuf) writeString(b string) {
-	l, c, n := len(me.b), cap(me.b), len(b)
+func (this *writeBuf) writeString(b string) {
+	l, c, n := len(this.b), cap(this.b), len(b)
 	if ln := l + n; ln > c {
-		old := me.b
-		me.b = make([]byte, ln, ln+ln+128)
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, ln, ln+ln+128)
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:ln]
+		this.b = this.b[:ln]
 	}
-	copy(me.b[l:], b)
+	copy(this.b[l:], b)
 }
 
-func (me *writeBuf) writeTo(w io.Writer) (int64, error) {
-	n, err := w.Write(me.b)
+func (this *writeBuf) writeTo(w io.Writer) (int64, error) {
+	n, err := w.Write(this.b)
 	return int64(n), err
 }

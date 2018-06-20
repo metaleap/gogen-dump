@@ -38,24 +38,24 @@ import (
 {{range .Fields}}   - {{.FName}} - {{.Comment}}
 {{end}}*/
 
-func (me *{{.TName}}) marshalTo(buf {{$bType}}/*, addrs map[uintptr]uint64*/) (err error) {
+func (this *{{.TName}}) marshalTo(buf {{$bType}}/*, addrs map[uintptr]uint64*/) (err error) {
 	{{if .TmplW}}{{.TmplW}}
 	{{else}}{{range .Fields}}{{if .TmplW}} // {{.FName}}{{.FExtNames}}
 	{{.TmplW}}
 	{{end}}{{end}}{{end}}return
 }
 
-// MarshalBinary` + " implements `encoding.BinaryMarshaler` by serializing `me` into `data` (that can be consumed by `UnmarshalBinary`)" + `.
-func (me *{{.TName}}) MarshalBinary() (data []byte, err error) {
+// MarshalBinary` + " implements `encoding.BinaryMarshaler` by serializing `this` into `data` (that can be consumed by `UnmarshalBinary`)" + `.
+func (this *{{.TName}}) MarshalBinary() (data []byte, err error) {
 	// var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
 	buf := {{$bCtor}}(make([]byte, 0, {{.InitialBufSize}}))
-	if err = me.marshalTo(buf/*, addrs*/); err == nil {
+	if err = this.marshalTo(buf/*, addrs*/); err == nil {
 		data = {{$bBytes}}
 	}
 	return
 }
 
-func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte/*, addrs map[uint64]uintptr*/) (err error) {
+func (this *{{.TName}}) unmarshalFrom(pos *int, data []byte/*, addrs map[uint64]uintptr*/) (err error) {
 	{{if .TmplR}}{{.TmplR}}{{else}}p := *pos
 	{{range .Fields}}{{if .TmplR}} // {{.FName}}{{.FExtNames}}
 	{{.TmplR}}
@@ -63,17 +63,17 @@ func (me *{{.TName}}) unmarshalFrom(pos *int, data []byte/*, addrs map[uint64]ui
 	return
 }
 
-// UnmarshalBinary` + " implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `me`" + `.
-func (me *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
+// UnmarshalBinary` + " implements `encoding.BinaryUnmarshaler` by deserializing from `data` (that was originally produced by `MarshalBinary`) into `this`" + `.
+func (this *{{.TName}}) UnmarshalBinary(data []byte) (err error) {
 	// var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
 	var pos0 int
-	err = me.unmarshalFrom(&pos0, data/*, addrs*/)
+	err = this.unmarshalFrom(&pos0, data/*, addrs*/)
 	return
 }
 
-// ReadFrom` + " implements `io.ReaderFrom` by deserializing from `r` into `me`" + `.
+// ReadFrom` + " implements `io.ReaderFrom` by deserializing from `r` into `this`" + `.
 // It reads only as many bytes as indicated necessary in the initial 16-byte header prefix from ` + "`WriteTo`" + `, any remainder remains unread.
-func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
+func (this *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 	// var addrs {{if $addrs}}= map[uint64]uintptr{}{{else}}map[uint64]uintptr{{end}}
 	var header [2]uint64
 	n, err := io.ReadAtLeast(r, ((*[16]byte)(unsafe.Pointer(&header[0])))[:], 16)
@@ -84,7 +84,7 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 			data := make([]byte, header[1])
 			if n, err = io.ReadAtLeast(r, data, len(data)); err == nil {
 				var pos0 int
-				err = me.unmarshalFrom(&pos0, data/*, addrs*/)
+				err = this.unmarshalFrom(&pos0, data/*, addrs*/)
 			}
 			n += 16
 		}
@@ -92,12 +92,12 @@ func (me *{{.TName}}) ReadFrom(r io.Reader) (int64, error) {
 	return int64(n), err
 }
 
-// WriteTo` + " implements `io.WriterTo` by serializing `me` to `w`" + `.
+// WriteTo` + " implements `io.WriterTo` by serializing `this` to `w`" + `.
 // ` + "`WriteTo` and `ReadFrom` rely on a 16-byte header prefix to the subsequent raw serialization data handled by `MarshalBinary`/`UnmarshalBinary` respectively." + `
-func (me *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
+func (this *{{.TName}}) WriteTo(w io.Writer) (n int64, err error) {
 	// var addrs {{if $addrs}}= map[uintptr]uint64{}{{else}}map[uintptr]uint64{{end}}
 	buf := {{$bCtor}}(make([]byte, 0, {{.InitialBufSize}}))
-	if err = me.marshalTo(buf/*, addrs*/); err == nil {
+	if err = this.marshalTo(buf/*, addrs*/); err == nil {
 		header := [2]uint64 { {{.StructuralHash}}, uint64({{$bLen}}) }
 		var l int
 		if l, err = w.Write(((*[16]byte)(unsafe.Pointer(&header[0])))[:]); err != nil {
@@ -117,48 +117,48 @@ func writeBuffer(b []byte) *writeBuf {
 	return &writeBuf{b: b}
 }
 
-func (me *writeBuf) copyTo(to *writeBuf) {
-	to.write(me.b)
+func (this *writeBuf) copyTo(to *writeBuf) {
+	to.write(this.b)
 }
 
-func (me *writeBuf) writeByte(b byte) {
-	l, c := len(me.b), cap(me.b)
+func (this *writeBuf) writeByte(b byte) {
+	l, c := len(this.b), cap(this.b)
 	if l == c {
-		old := me.b
-		me.b = make([]byte, l+1, l+l+128) // the constant extra padding: if we're tiny (~0), it helps much; if we're large (MBs), it hurts none
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, l+1, l+l+128) // the constant extra padding: if we're tiny (~0), it helps much; if we're large (MBs), it hurts none
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:l+1]
+		this.b = this.b[:l+1]
 	}
-	me.b[l] = b
+	this.b[l] = b
 }
 
-func (me *writeBuf) write(b []byte) {
-	l, c, n := len(me.b), cap(me.b), len(b)
+func (this *writeBuf) write(b []byte) {
+	l, c, n := len(this.b), cap(this.b), len(b)
 	if ln := l + n; ln > c {
-		old := me.b
-		me.b = make([]byte, ln, ln+ln+128)
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, ln, ln+ln+128)
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:ln]
+		this.b = this.b[:ln]
 	}
-	copy(me.b[l:], b)
+	copy(this.b[l:], b)
 }
 
-func (me *writeBuf) writeString(b string) {
-	l, c, n := len(me.b), cap(me.b), len(b)
+func (this *writeBuf) writeString(b string) {
+	l, c, n := len(this.b), cap(this.b), len(b)
 	if ln := l + n; ln > c {
-		old := me.b
-		me.b = make([]byte, ln, ln+ln+128)
-		copy(me.b[:l], old)
+		old := this.b
+		this.b = make([]byte, ln, ln+ln+128)
+		copy(this.b[:l], old)
 	} else {
-		me.b = me.b[:ln]
+		this.b = this.b[:ln]
 	}
-	copy(me.b[l:], b)
+	copy(this.b[l:], b)
 }
 
-func (me *writeBuf) writeTo(w io.Writer) (int64, error) {
-	n, err := w.Write(me.b)
+func (this *writeBuf) writeTo(w io.Writer) (int64, error) {
+	n, err := w.Write(this.b)
 	return int64(n), err
 }
 {{end}}
@@ -185,12 +185,14 @@ type tmplDotFile struct {
 	allStructTypeDefsCollected bool
 }
 
-func (me *tmplDotFile) Len() int               { return len(me.Structs) }
-func (me *tmplDotFile) Less(i int, j int) bool { return me.Structs[i].TName < me.Structs[j].TName }
-func (me *tmplDotFile) Swap(i int, j int)      { me.Structs[i], me.Structs[j] = me.Structs[j], me.Structs[i] }
+func (this *tmplDotFile) Len() int               { return len(this.Structs) }
+func (this *tmplDotFile) Less(i int, j int) bool { return this.Structs[i].TName < this.Structs[j].TName }
+func (this *tmplDotFile) Swap(i int, j int) {
+	this.Structs[i], this.Structs[j] = this.Structs[j], this.Structs[i]
+}
 
-func (me *tmplDotFile) byName(name string) *tmplDotStruct {
-	for _, tds := range me.Structs {
+func (this *tmplDotFile) byName(name string) *tmplDotStruct {
+	for _, tds := range this.Structs {
 		if tds.TName == name {
 			return tds
 		}
@@ -219,37 +221,37 @@ type tmplDotStruct struct {
 	sizeheuring bool
 }
 
-func (me *tmplDotStruct) fixedSize() int {
-	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
-		me.fixedsize = -1 // set early in case of recursive type structures
+func (this *tmplDotStruct) fixedSize() int {
+	if this.fixedsize == 0 && tdot.allStructTypeDefsCollected {
+		this.fixedsize = -1 // set early in case of recursive type structures
 		isfixedsize := true
-		for _, fld := range me.Fields {
+		for _, fld := range this.Fields {
 			if fs := fld.fixedSize(); fs < 0 {
 				isfixedsize = false
 				break
 			} else if fs == 0 {
-				panic("should never occur, your recent changes must have introduced a bug: " + me.TName + "." + fld.FName)
+				panic("should never occur, your recent changes must have introduced a bug: " + this.TName + "." + fld.FName)
 			}
 		}
 		if isfixedsize { // so far we really just verified fixed-size-ness but to get the correct size, need to account for alignments/paddings instead of naively summing field sizes
-			if me.fixedsize = int(typeSizes.Sizeof(typeObjs[me.TName])); me.fixedsize == 0 {
-				me.fixedsize = -1
+			if this.fixedsize = int(typeSizes.Sizeof(typeObjs[this.TName])); this.fixedsize == 0 {
+				this.fixedsize = -1
 			}
 		}
 	}
-	return me.fixedsize
+	return this.fixedsize
 }
 
-func (me *tmplDotStruct) sizeHeur(exprPref string) *sizeHeuristics {
-	if me.sizeheuring {
+func (this *tmplDotStruct) sizeHeur(exprPref string) *sizeHeuristics {
+	if this.sizeheuring {
 		return &sizeHeuristics{Lit: optHeuristicSizeUnknowns}
 	}
-	me.sizeheuring = true
-	if fs := me.fixedSize(); fs > 0 {
+	this.sizeheuring = true
+	if fs := this.fixedSize(); fs > 0 {
 		return &sizeHeuristics{Lit: fs}
 	}
 	var last *sizeHeuristics
-	for _, tdf := range me.Fields {
+	for _, tdf := range this.Fields {
 		this := tdf.sizeHeur(exprPref)
 		if last == nil {
 			last = this
@@ -257,7 +259,7 @@ func (me *tmplDotStruct) sizeHeur(exprPref string) *sizeHeuristics {
 			last = &sizeHeuristics{Op1: last, OpAdd: true, Op2: this}
 		}
 	}
-	me.sizeheuring = false
+	this.sizeheuring = false
 	return last
 }
 
@@ -279,29 +281,29 @@ type tmplDotField struct {
 	fixedsizeExtNumSkip int
 }
 
-func (me *tmplDotField) finalTypeIdent() (typeident string) {
-	typeident = me.typeIdent
+func (this *tmplDotField) finalTypeIdent() (typeident string) {
+	typeident = this.typeIdent
 	for tsyn := typeSyns[typeident]; tsyn != ""; tsyn = typeSyns[typeident] {
 		typeident = tsyn
 	}
 	return
 }
 
-func (me *tmplDotField) fixedSize() int {
-	if me.fixedsize == 0 && tdot.allStructTypeDefsCollected {
-		me.fixedsize = fixedSizeForTypeSpec(me.typeIdent)
+func (this *tmplDotField) fixedSize() int {
+	if this.fixedsize == 0 && tdot.allStructTypeDefsCollected {
+		this.fixedsize = fixedSizeForTypeSpec(this.typeIdent)
 	}
-	return me.fixedsize
+	return this.fixedsize
 }
 
-func (me *tmplDotField) sizeHeur(exprPref string) *sizeHeuristics {
-	if fs := me.fixedSize(); fs > 0 {
+func (this *tmplDotField) sizeHeur(exprPref string) *sizeHeuristics {
+	if fs := this.fixedSize(); fs > 0 {
 		return &sizeHeuristics{Lit: fs}
 	} else {
 		if exprPref != "" {
-			exprPref += me.FName
+			exprPref += this.FName
 		}
-		return typeSizeHeur(me.finalTypeIdent(), exprPref)
+		return typeSizeHeur(this.finalTypeIdent(), exprPref)
 	}
 }
 
@@ -330,50 +332,50 @@ type sizeHeuristics struct {
 	Op2   *sizeHeuristics
 }
 
-func (me *sizeHeuristics) isLit() bool {
-	return (!me.OpAdd) && (!me.OpMul) && me.Expr == ""
+func (this *sizeHeuristics) isLit() bool {
+	return (!this.OpAdd) && (!this.OpMul) && this.Expr == ""
 }
 
-func (me *sizeHeuristics) reduce() *sizeHeuristics {
-	if me.Op1 != nil && me.Op2 != nil {
-		me.Op1, me.Op2 = me.Op1.reduce(), me.Op2.reduce()
-		l1, l2 := me.Op1.Lit, me.Op2.Lit
-		o1, o2 := me.Op1.isLit(), me.Op2.isLit()
+func (this *sizeHeuristics) reduce() *sizeHeuristics {
+	if this.Op1 != nil && this.Op2 != nil {
+		this.Op1, this.Op2 = this.Op1.reduce(), this.Op2.reduce()
+		l1, l2 := this.Op1.Lit, this.Op2.Lit
+		o1, o2 := this.Op1.isLit(), this.Op2.isLit()
 		switch {
-		case me.OpMul:
+		case this.OpMul:
 
 			if l1 == 1 {
-				return me.Op2
+				return this.Op2
 			} else if l2 == 1 {
-				return me.Op1
+				return this.Op1
 			} else if (o1 && l1 == 0) || (o2 && l2 == 0) {
 				return &sizeHeuristics{}
 			} else if o1 && o2 {
 				return &sizeHeuristics{Lit: l1 * l2}
 			}
-		case me.OpAdd:
+		case this.OpAdd:
 			if o1 && l1 == 0 {
-				return me.Op2
+				return this.Op2
 			} else if o2 && l2 == 0 {
-				return me.Op1
+				return this.Op1
 			} else if o1 && o2 {
 				return &sizeHeuristics{Lit: l1 + l2}
 			}
 		}
 	}
-	return me
+	return this
 }
 
-func (me *sizeHeuristics) String() string {
+func (this *sizeHeuristics) String() string {
 	switch {
-	case me.isLit():
-		return strconv.Itoa(me.Lit)
-	case me.Expr != "":
-		return me.Expr
-	case me.OpMul:
-		return "(" + me.Op1.String() + " * " + me.Op2.String() + ")"
-	case me.OpAdd:
-		return "(" + me.Op1.String() + " + " + me.Op2.String() + ")"
+	case this.isLit():
+		return strconv.Itoa(this.Lit)
+	case this.Expr != "":
+		return this.Expr
+	case this.OpMul:
+		return "(" + this.Op1.String() + " * " + this.Op2.String() + ")"
+	case this.OpAdd:
+		return "(" + this.Op1.String() + " + " + this.Op2.String() + ")"
 	}
 	panic("forgot a case in switch?!")
 }

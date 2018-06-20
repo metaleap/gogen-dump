@@ -72,21 +72,21 @@ type pet struct {
 	OrigCostIfKnown *complex128
 }
 
-func (me *pet) carnivore() bool { return true }
-func (me *pet) mammal() bool    { return true }
+func (*pet) carnivore() bool { return true }
+func (*pet) mammal() bool    { return true }
 
 type petPiranha struct {
 	pet
 	Weird map[****[1234]byte][]fixedSize
 }
 
-func (me *petPiranha) mammal() bool { return false }
+func (*petPiranha) mammal() bool { return false }
 
 type petHamster struct {
 	pet
 }
 
-func (me *petHamster) carnivore() bool { return false }
+func (*petHamster) carnivore() bool { return false }
 
 type petCat struct {
 	pet
