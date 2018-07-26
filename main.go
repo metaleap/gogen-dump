@@ -40,7 +40,7 @@ var (
 
 	optStdlibBytesBuffer = false // set to true by presence of command-line arg -stdlibBytesBuffer
 
-	optSharedRefs = true // set to true by presence of command-line arg -sharedRefs
+	// optSharedRefs = true // set to true by presence of command-line arg -sharedRefs
 
 	optHeuristicLenStrings = 7
 
@@ -70,7 +70,7 @@ func main() {
 				"ignoreUnknownTypeCases": &optIgnoreUnknownTypeCases,
 				"noFixedSizeCode":        &optNoFixedSizeCode,
 				"stdlibBytesBuffer":      &optStdlibBytesBuffer,
-				"sharedRefs":             &optSharedRefs,
+				// "sharedRefs":             &optSharedRefs,
 			}
 			for i, ditch := 0, false; i < len(typeNames); i++ {
 				if tn := ustr.Skip(typeNames[i], '-'); tn != typeNames[i] { // starts with - or --
@@ -158,7 +158,7 @@ func main() {
 		}
 	}
 
-	if tdot.SharedAddrs, tdot.BBuf.Stdlib = optSharedRefs, optStdlibBytesBuffer; tdot.BBuf.Stdlib {
+	if /*tdot.SharedAddrs,*/ tdot.BBuf.Stdlib = /* optSharedRefs,*/ optStdlibBytesBuffer; tdot.BBuf.Stdlib {
 		tdot.BBuf.Bytes = "buf.Bytes()"
 		tdot.BBuf.Ctor = "bytes.NewBuffer"
 		tdot.BBuf.Len = "buf.Len()"

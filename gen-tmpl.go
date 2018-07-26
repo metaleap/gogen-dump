@@ -165,12 +165,12 @@ func (this *writeBuf) writeTo(w io.Writer) (int64, error) {
 `
 
 type tmplDotFile struct {
-	ProgHint    string
-	PName       string
-	Structs     []*tmplDotStruct
-	Imps        map[string]*tmplDotPkgImp
-	SharedAddrs bool
-	BBuf        struct {
+	ProgHint string
+	PName    string
+	Structs  []*tmplDotStruct
+	Imps     map[string]*tmplDotPkgImp
+	// SharedAddrs bool
+	BBuf struct {
 		Stdlib  bool
 		Bytes   string
 		Ctor    string
