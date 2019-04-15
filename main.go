@@ -100,7 +100,7 @@ func main() {
 	}
 
 	var gofilepaths []string
-	ufs.WalkFilesIn(goPkgDirPath, func(fp string) bool {
+	ufs.WalkFilesIn(goPkgDirPath, func(fp string, _ os.FileInfo) bool {
 		if ustr.Suff(fp, ".go") && fp != genFileName {
 			gofilepaths = append(gofilepaths, fp)
 		}
